@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calibrate</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1f3d;
+    --navy-light: #1a3260;
+    --gold: #c8a800;
+    --gold-light: #f0cc00;
+    --cream: #f5f0e8;
+    --white: #ffffff;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e2d9c8;
+    --text: #1a1a2e;
+    --success: #16a34a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--navy); padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--white); }
+  .logo span { color: var(--gold); }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-api { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .header-api span { color: var(--gold); font-weight: 600; }
+
+  /* SCREENS */
+  .screen { display: none; animation: fadeIn 0.3s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .main { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+  /* DASHBOARD */
+  .dashboard-welcome { background: var(--navy); border-radius: 16px; padding: 32px; margin-bottom: 28px; }
+  .dashboard-welcome h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--white); margin-bottom: 6px; }
+  .dashboard-welcome p { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
+
+  .dash-chat { background: rgba(255,255,255,0.07); border-radius: 12px; overflow: hidden; }
+  .dash-chat-msgs { padding: 20px; min-height: 80px; }
+  .dash-chat-input { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .dash-chat-input textarea { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 14px; resize: none; min-height: 42px; }
+  .dash-chat-input textarea::placeholder { color: rgba(255,255,255,0.4); }
+  .dash-chat-input textarea:focus { outline: none; border-color: var(--gold); }
+  .dash-send { width: 42px; height: 42px; border-radius: 8px; background: var(--gold); border: none; color: var(--navy); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .dash-send:hover { background: var(--gold-light); }
+
+  .dash-msg { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.85); margin-bottom: 8px; }
+  .dash-msg.user { color: var(--gold); text-align: right; }
+
+  /* DASHBOARD GRID */
+  .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .dash-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .dash-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .dash-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .dash-card-label { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+  .dash-card-count { font-size: 11px; color: var(--gray); }
+  .dash-card-badge { position: absolute; top: 10px; right: 10px; background: var(--gold); color: var(--navy); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .coming-soon { position: absolute; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--gray); letter-spacing: 0.5px; opacity: 0; transition: opacity 0.2s; border-radius: 12px; }
+  .dash-card:hover .coming-soon { opacity: 1; }
+
+  .dash-new-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--navy); border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .dash-new-btn:hover { background: var(--gold-light); }
+
+  /* API KEY MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: var(--white); border-radius: 16px; padding: 32px; max-width: 480px; width: 100%; }
+  .modal h2 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+  .modal input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; margin-bottom: 16px; }
+  .modal input:focus { outline: none; border-color: var(--gold); }
+  .modal-btn { width: 100%; padding: 12px; background: var(--navy); color: var(--white); border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-btn:hover { background: var(--navy-light); }
+
+  /* STEP HEADER */
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .step-back { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--navy); cursor: pointer; }
+  .step-back:hover { border-color: var(--navy); }
+  .step-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--navy); }
+  .step-sub { font-size: 14px; color: var(--gray); margin-top: 4px; }
+
+  /* CARDS */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; margin-bottom: 18px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .card-sub { font-size: 13px; color: var(--gray); margin-bottom: 18px; }
+
+  /* UPLOAD */
+  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--cream); position: relative; }
+  .upload-zone:hover { border-color: var(--gold); background: #fdf9ee; }
+  .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-label { font-size: 13px; font-weight: 500; color: var(--navy); margin-bottom: 3px; }
+  .upload-hint { font-size: 11px; color: var(--gray); }
+  .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .file-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--gray-light); border-radius: 6px; font-size: 12px; }
+  .file-name { flex: 1; font-weight: 500; }
+  .file-size { color: var(--gray); font-size: 11px; }
+  .file-remove { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 15px; }
+  .file-remove:hover { color: #dc2626; }
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  /* INPUTS */
+  .field-label { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; display: block; }
+  textarea, input[type="text"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--white); transition: border-color 0.2s; resize: vertical; }
+  textarea:focus, input:focus { outline: none; border-color: var(--gold); }
+
+  /* TONE/LENGTH OPTIONS */
+  .option-group { display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .option-btn { padding: 8px 18px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--navy); cursor: pointer; transition: all 0.15s; }
+  .option-btn:hover { border-color: var(--gold); }
+  .option-btn.selected { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .option-hint { font-size: 12px; color: var(--gray); margin-top: 6px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--navy); color: var(--white); }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-gold:hover { background: var(--gold-light); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+  /* CHAT */
+  .chat-container { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; height: 400px; overflow: hidden; margin-bottom: 16px; }
+  .chat-header { padding: 14px 18px; display: flex; align-items: center; gap: 10px; background: var(--navy); color: var(--white); }
+  .chat-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+  .chat-header-text { font-size: 13px; font-weight: 500; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .message { display: flex; gap: 10px; animation: fadeIn 0.2s ease; }
+  .message.user { flex-direction: row-reverse; }
+  .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .message.ai .msg-avatar { background: var(--navy); color: var(--gold); }
+  .message.user .msg-avatar { background: var(--gold); color: var(--navy); }
+  .msg-bubble { max-width: 78%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+  .message.ai .msg-bubble { background: var(--gray-light); color: var(--text); border-bottom-left-radius: 4px; }
+  .message.user .msg-bubble { background: var(--navy); color: var(--white); border-bottom-right-radius: 4px; }
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+  .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gray); animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+  .chat-input-area { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-end; }
+  .chat-input { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; resize: none; min-height: 40px; max-height: 100px; }
+  .chat-input:focus { outline: none; border-color: var(--gold); }
+  .chat-send { width: 40px; height: 40px; border-radius: 8px; background: var(--navy); border: none; color: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .chat-send:hover { background: var(--navy-light); }
+  .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* PROGRESS */
+  .progress-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin: 16px 0; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s ease; }
+  .progress-list { display: flex; flex-direction: column; gap: 8px; }
+  .progress-item { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; transition: all 0.3s; }
+  .progress-item.processing { border-color: var(--gold); background: #fffbeb; }
+  .progress-item.done { border-color: #bbf7d0; background: #f0fdf4; }
+  .progress-item.current { border-color: var(--navy); background: #eef2ff; }
+  .progress-status { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; background: var(--gray-light); color: var(--gray); }
+  .progress-item.processing .progress-status { background: var(--gold); color: var(--navy); animation: pulse 1s infinite; }
+  .progress-item.done .progress-status { background: var(--success); color: var(--white); }
+  .progress-item.current .progress-status { background: var(--navy); color: var(--white); }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  .progress-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .progress-grade { font-size: 12px; font-weight: 600; color: var(--navy); font-family: 'Playfair Display', serif; }
+
+  /* FIRST PAPER REVIEW */
+  .first-paper-box { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+  .first-paper-header { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .first-paper-header-text { font-size: 14px; font-weight: 600; color: var(--white); }
+  .first-paper-grade { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--gold); }
+  .first-paper-body { display: grid; grid-template-columns: 1fr 1fr; min-height: 400px; }
+  .first-paper-feedback { padding: 20px; border-right: 1px solid var(--border); overflow-y: auto; max-height: 500px; }
+  .first-paper-essay { padding: 20px; overflow-y: auto; max-height: 500px; background: var(--cream); }
+  .first-paper-feedback h4 { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 16px; }
+  .first-paper-feedback h4:first-child { margin-top: 0; }
+  .first-paper-feedback p { font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px; }
+  .first-paper-essay p { font-size: 13px; color: var(--text); line-height: 1.7; }
+  .first-paper-essay h4 { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .rubric-row { display: flex; gap: 10px; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .rubric-category { font-weight: 600; color: var(--navy); min-width: 160px; flex-shrink: 0; }
+  .rubric-score { color: var(--gold); font-weight: 700; min-width: 36px; }
+  .rubric-comment { color: var(--gray); flex: 1; }
+
+  .action-choices { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+  .action-choice { flex: 1; min-width: 160px; padding: 14px 16px; background: var(--white); border: 1.5px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .action-choice:hover { border-color: var(--gold); background: #fffbeb; }
+  .action-choice .choice-icon { font-size: 22px; margin-bottom: 6px; }
+  .action-choice .choice-label { font-size: 13px; font-weight: 600; color: var(--navy); }
+  .action-choice .choice-sub { font-size: 11px; color: var(--gray); margin-top: 3px; }
+
+  /* INLINE REVIEW */
+  .review-list { display: flex; flex-direction: column; gap: 20px; }
+  .review-item { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .review-item-header { background: var(--navy); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .review-item-name { font-size: 14px; font-weight: 600; color: var(--white); }
+  .review-item-grade { font-family: 'Playfair Display', serif; font-size: 14px; color: var(--gold); }
+  .review-item-body { display: grid; grid-template-columns: 1fr 1fr; }
+  .review-feedback-pane { padding: 18px; border-right: 1px solid var(--border); }
+  .review-essay-pane { padding: 18px; background: var(--cream); }
+  .review-feedback-edit { width: 100%; min-height: 300px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; line-height: 1.7; color: var(--text); background: var(--white); resize: vertical; }
+  .review-feedback-edit:focus { outline: none; border-color: var(--gold); }
+  .review-essay-text { font-size: 12px; line-height: 1.8; color: var(--text); }
+  .review-item-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: var(--gray-light); }
+  .approve-btn { padding: 7px 18px; background: var(--success); color: var(--white); border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .approve-btn.approved { background: #dcfce7; color: var(--success); cursor: default; }
+  .dl-btn { padding: 7px 18px; background: var(--navy); color: var(--white); border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  /* EXPORT */
+  .summary-bar { background: var(--navy); border-radius: var(--radius); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .summary-stat { text-align: center; }
+  .summary-num { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--gold); }
+  .summary-label { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .summary-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.15); }
+
+  @media (max-width: 640px) {
+    .dash-grid { grid-template-columns: repeat(2, 1fr); }
+    .upload-grid { grid-template-columns: 1fr; }
+    .first-paper-body { grid-template-columns: 1fr; }
+    .review-item-body { grid-template-columns: 1fr; }
+    .first-paper-essay { border-top: 1px solid var(--border); border-right: none; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h2>Welcome to Calibrate</h2>
+    <p>Enter your Anthropic API key to get started. Your key is used only in this session and sent directly to Anthropic — never stored.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off"/>
+    <button class="modal-btn" id="apiSubmit">Get Started →</button>
+    <p style="font-size:11px;color:var(--gray);margin-top:12px;text-align:center;">Need a key? <a href="https://console.anthropic.com" target="_blank" style="color:var(--navy);">console.anthropic.com</a> — costs ~$0.01–0.03 per essay</p>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo">Calibrate<span>.</span></div>
+  <div class="header-right">
+    <div class="header-api" id="headerApiStatus"></div>
+  </div>
+</div>
+
+<!-- SCREEN: DASHBOARD -->
+<div class="screen active" id="screenDash">
+  <div class="main">
+    <div class="dashboard-welcome">
+      <h1>Welcome back.</h1>
+      <p>What would you like to do today?</p>
+      <div class="dash-chat">
+        <div class="dash-chat-msgs" id="dashMsgs">
+          <div class="dash-msg">👋 Welcome! You can give me specific instructions, or just upload your prompt, rubric, and any supporting documents and we can get started. What would you like to do today?</div>
+        </div>
+        <div class="dash-chat-input">
+          <textarea id="dashInput" rows="1" placeholder="Type a message or click 'Start New Assignment' below..."></textarea>
+          <button class="dash-send" id="dashSend">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">📁</div>
+        <div class="dash-card-label">Assignments</div>
+        <div class="dash-card-count">All assignments</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">📋</div>
+        <div class="dash-card-label">Rubrics</div>
+        <div class="dash-card-count">Saved rubrics</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">✅</div>
+        <div class="dash-card-label">Graded</div>
+        <div class="dash-card-count">Completed</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">⏳</div>
+        <div class="dash-card-label">Pending Review</div>
+        <div class="dash-card-count">Awaiting approval</div>
+        <div class="dash-card-badge">0</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+    </div>
+
+    <button class="dash-new-btn" id="startNewBtn">+ Start New Assignment</button>
+  </div>
+</div>
+
+<!-- SCREEN: SETUP -->
+<div class="screen" id="screenSetup">
+  <div class="main">
+    <div class="step-header">
+      <button class="step-back" onclick="goTo('screenDash')">← Dashboard</button>
+      <div>
+        <div class="step-title">Set up your assignment</div>
+        <div class="step-sub">Upload materials — nothing is required. Calibrate can work with whatever you have.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Assignment Details</div>
+      <div class="card-sub">Give Calibrate context about the assignment.</div>
+      <label class="field-label" style="margin-bottom:6px;">Assignment Title</label>
+      <input type="text" id="assignmentTitle" placeholder="e.g. Topic 5: Ancient Greece Writing and Analysis Assessment" style="margin-bottom:14px;"/>
+      <label class="field-label">Assignment Prompt <span style="font-weight:400;color:var(--gray)">(optional)</span></label>
+      <textarea id="assignmentPrompt" rows="3" placeholder="Paste the prompt students were given..."></textarea>
+    </div>
+
+    <div class="upload-grid">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Rubric <span style="font-weight:400;font-size:13px;color:var(--gray)">(optional)</span></div>
+        <div class="card-sub">Upload your grading rubric.</div>
+        <div class="upload-zone"><input type="file" id="rubricFile" accept=".pdf,.docx,.txt"/><div class="upload-icon">📋</div><div class="upload-label">Drop rubric here</div><div class="upload-hint">PDF, DOCX, or TXT</div></div>
+        <div class="file-list" id="rubricList"></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Additional Supporting Documents <span style="font-weight:400;font-size:13px;color:var(--gray)">(optional)</span></div>
+        <div class="card-sub">Source texts, vocabulary lists, anchor examples, exemplars, or any other supporting materials.</div>
+        <div class="upload-zone" onclick="document.getElementById('sourceFiles').click()" style="cursor:pointer;">
+          <input type="file" id="sourceFiles" accept=".pdf,.docx,.txt" multiple style="display:none;"/>
+          <div class="upload-icon">📎</div>
+          <div class="upload-label">Click or drop supporting documents here</div>
+          <div class="upload-hint">Source texts, vocabulary lists, anchor examples, exemplars — multiple files allowed</div>
+        </div>
+        <div class="file-list" id="sourceList"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Student Essays</div>
+      <div class="card-sub">Upload student submissions. Name each file after the student.</div>
+      <div class="upload-zone"><input type="file" id="essayFiles" accept=".pdf,.docx,.txt" multiple/><div class="upload-icon">📝</div><div class="upload-label">Drop student essays here</div><div class="upload-hint">Multiple files — name each after the student</div></div>
+      <div class="file-list" id="essayList"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="toCalibrate">Continue to Calibration →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: CALIBRATE -->
+<div class="screen" id="screenCalibrate">
+  <div class="main">
+    <div class="step-header">
+      <button class="step-back" onclick="goTo('screenSetup')">← Back</button>
+      <div>
+        <div class="step-title">Calibrate your feedback</div>
+        <div class="step-sub">Set your preferences — or just say "go ahead" to use Calibrate's best judgment.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Feedback Tone</div>
+      <div class="card-sub">How should the feedback feel to students?</div>
+      <div class="option-group" id="toneGroup">
+        <button class="option-btn" onclick="selectOption('toneGroup', this, 'tone', 'Friendly')">😊 Friendly</button>
+        <button class="option-btn" onclick="selectOption('toneGroup', this, 'tone', 'Direct')">🎯 Direct</button>
+        <button class="option-btn" onclick="selectOption('toneGroup', this, 'tone', 'Academic')">🎓 Academic</button>
+      </div>
+      <div class="option-hint">You can adjust this further in the chat below.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Feedback Length</div>
+      <div class="card-sub">How detailed should each feedback response be?</div>
+      <div class="option-group" id="lengthGroup">
+        <button class="option-btn" onclick="selectOption('lengthGroup', this, 'length', 'Concise — key points only')">Brief</button>
+        <button class="option-btn" onclick="selectOption('lengthGroup', this, 'length', 'Balanced — clear and thorough')">Balanced</button>
+        <button class="option-btn" onclick="selectOption('lengthGroup', this, 'length', 'Detailed — comprehensive feedback')">Detailed</button>
+      </div>
+      <div class="option-hint">You can specify a word count or other preferences in the chat below.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Grading Preferences</div>
+      <div class="card-sub">Share any additional instructions before grading begins. This chat is for setting preferences only — essay feedback happens on the next screen.</div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:14px;">
+        💡 <strong>Tip:</strong> Use this chat to tell Calibrate how you grade — what you value, what to watch for, how strict to be. Say <strong>"go ahead"</strong> to skip straight to grading.
+      </div>
+      <div class="chat-container">
+        <div class="chat-header"><div class="chat-dot"></div><div class="chat-header-text">Calibration Chat — <span id="calibChatLabel">Assignment</span></div></div>
+        <div class="chat-messages" id="calibMessages"></div>
+        <div class="chat-input-area">
+          <textarea class="chat-input" id="calibInput" rows="1" placeholder="Share grading preferences, or say 'go ahead'..."></textarea>
+          <button class="chat-send" id="calibSend">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-outline btn-sm" onclick="goTo('screenSetup')">← Back</button>
+      <button class="btn btn-primary" id="toGrade" disabled>Start Grading →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: GRADING -->
+<div class="screen" id="screenGrade">
+  <div class="main">
+
+    <!-- GENERATING VIEW -->
+    <div id="gradingView">
+      <div class="step-title" style="margin-bottom:6px;">Grading in progress</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:24px;">Processing submissions one at a time.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:13px;color:var(--gray);" id="progressLabel">Starting...</span>
+        <span style="font-size:13px;font-weight:600;color:var(--navy);" id="progressCount">0 / 0</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+      <div class="progress-list" id="progressList"></div>
+    </div>
+
+    <!-- FIRST PAPER REVIEW -->
+    <div id="firstPaperView" style="display:none;">
+      <div class="step-title" style="margin-bottom:6px;">First submission graded</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:20px;">Have a look at the feedback and score. Let me know if you'd like any changes before I continue.</div>
+
+      <div class="first-paper-box">
+        <div class="first-paper-header">
+          <div class="first-paper-header-text" id="firstPaperName">Student Name</div>
+          <div class="first-paper-grade" id="firstPaperGrade"></div>
+        </div>
+        <div class="first-paper-body">
+          <div class="first-paper-feedback" id="firstPaperFeedback"></div>
+          <div class="first-paper-essay">
+            <h4>Student Writing</h4>
+            <p id="firstPaperEssay"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">How does this look?</div>
+        <div class="card-sub">Tell Calibrate what you think. Ask for changes, say "grade one more," or say "grade all" to continue.</div>
+        <div class="chat-container" style="height:300px;">
+          <div class="chat-header"><div class="chat-dot"></div><div class="chat-header-text">First Submission Review</div></div>
+          <div class="chat-messages" id="firstPaperChatMessages"></div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="firstPaperChatInput" rows="1" placeholder="Looks good — grade all. Or: be less harsh on organization..."></textarea>
+            <button class="chat-send" id="firstPaperChatSend">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INLINE REVIEW VIEW -->
+    <div id="inlineReviewView" style="display:none;">
+      <div class="step-title" style="margin-bottom:6px;">Review & Edit Feedback</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:20px;">Edit any feedback directly before downloading. Use the chat below to request changes to specific submissions.</div>
+
+      <div class="review-list" id="reviewList"></div>
+
+      <!-- POST-GRADING CHAT -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-title">Need to make changes?</div>
+        <div class="card-sub">Tell Calibrate which submission needs adjusting and what to change. It will regrade and update the feedback above.</div>
+        <div class="chat-container" style="height:320px;">
+          <div class="chat-header"><div class="chat-dot"></div><div class="chat-header-text">Post-Grading Review Chat</div></div>
+          <div class="chat-messages" id="reviewChatMessages"></div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="reviewChatInput" rows="1" placeholder="e.g. Sample 3 is scored too high. Be less harsh on Sample 7's organization..."></textarea>
+            <button class="chat-send" id="reviewChatSend">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="goTo('screenDash')">Back to Dashboard</button>
+        <button class="btn btn-gold" id="downloadAllBtn">⬇ Download All</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+const PROXY = 'https://create-repl--cbmilone.replit.app/api/anthropic/v1/messages';
+const PROXY_TOKEN = 'calibrate-beta-2026';
+
+const state = {
+  apiKey: '',
+  assignmentTitle: '',
+  assignmentPrompt: '',
+  rubricText: '',
+  sourceFiles: [],
+  sourceTexts: [],
+  essayFiles: [],
+  essayTexts: [],
+  tone: '',
+  length: '',
+  calibrationRules: '',
+  calibMessages: [],
+  results: [],
+  currentIndex: 0
+};
+
+// ── API MODAL ─────────────────────────────────────────────────────────────────
+document.getElementById('apiSubmit').addEventListener('click', () => {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || key.length < 10) {
+    document.getElementById('apiKeyInput').style.borderColor = '#dc2626';
+    document.getElementById('apiKeyInput').placeholder = 'Please paste your API key first...';
+    return;
+  }
+  state.apiKey = key;
+  document.getElementById('apiModal').style.display = 'none';
+  document.getElementById('headerApiStatus').innerHTML = 'API Key: <span>Active</span>';
+});
+
+document.getElementById('apiKeyInput').addEventListener('input', function() {
+  this.style.borderColor = '';
+});
+
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('apiSubmit').click();
+});
+
+// Also allow clicking anywhere on modal button area
+document.getElementById('apiKeyInput').addEventListener('paste', function() {
+  setTimeout(() => {
+    if (this.value.trim().length > 10) {
+      this.style.borderColor = '#16a34a';
+    }
+  }, 100);
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showComingSoon(el) {
+  const cs = el.querySelector('.coming-soon');
+  cs.style.opacity = '1';
+  setTimeout(() => cs.style.opacity = '0', 1500);
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+document.getElementById('startNewBtn').addEventListener('click', () => goTo('screenSetup'));
+
+document.getElementById('dashSend').addEventListener('click', sendDashMsg);
+document.getElementById('dashInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDashMsg(); }
+});
+
+function sendDashMsg() {
+  const inp = document.getElementById('dashInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  const msgs = document.getElementById('dashMsgs');
+  const d = document.createElement('div');
+  d.className = 'dash-msg user';
+  d.textContent = txt;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  setTimeout(() => {
+    const r = document.createElement('div');
+    r.className = 'dash-msg';
+    r.textContent = "Got it! Let's get started. Click 'Start New Assignment' to set up your materials, or go ahead and tell me more about what you're working on.";
+    msgs.appendChild(r);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 600);
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function readFileAsText(file) {
+  const name = file.name.toLowerCase();
+
+  // .docx — use mammoth to extract clean text
+  if (name.endsWith('.docx')) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        mammoth.extractRawText({ arrayBuffer: e.target.result })
+          .then(result => resolve(result.value || '[Empty document]'))
+          .catch(() => resolve('[Could not read .docx: ' + file.name + ']'));
+      };
+      reader.onerror = () => resolve('[Could not read: ' + file.name + ']');
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // .pdf — read as text (works for text-layer PDFs)
+  if (name.endsWith('.pdf')) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        // Extract printable ASCII text from PDF binary
+        const raw = e.target.result;
+        let text = '';
+        for (let i = 0; i < raw.length; i++) {
+          const code = raw.charCodeAt(i);
+          if (code >= 32 && code < 127) text += raw[i];
+          else if (code === 10 || code === 13) text += '\n';
+        }
+        // Clean up repeated whitespace and extract readable chunks
+        const cleaned = text
+          .replace(/\r\n|\r/g, '\n')
+          .replace(/[^\x20-\x7E\n]/g, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .replace(/ {2,}/g, ' ')
+          .trim();
+        resolve(cleaned || '[Could not extract text from PDF: ' + file.name + ']');
+      };
+      reader.onerror = () => resolve('[Could not read: ' + file.name + ']');
+      reader.readAsBinaryString(file);
+    });
+  }
+
+  // .txt and everything else — plain text
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => resolve('[Could not read: ' + file.name + ']');
+    reader.readAsText(file);
+  });
+}
+
+function fmt(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function renderList(id, files, onRemove) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  files.forEach((f, i) => {
+    const d = document.createElement('div');
+    d.className = 'file-item';
+    d.innerHTML = `<span>📄</span><span class="file-name">${f.name}</span><span class="file-size">${fmt(f.size)}</span><button class="file-remove">×</button>`;
+    d.querySelector('.file-remove').onclick = () => onRemove(i);
+    el.appendChild(d);
+  });
+}
+
+document.getElementById('assignmentTitle').addEventListener('input', function() { state.assignmentTitle = this.value.trim(); });
+document.getElementById('assignmentPrompt').addEventListener('input', function() { state.assignmentPrompt = this.value.trim(); });
+
+document.getElementById('rubricFile').addEventListener('change', async function() {
+  if (!this.files[0]) return;
+  state.rubricText = await readFileAsText(this.files[0]);
+  renderList('rubricList', [this.files[0]], () => { state.rubricText = ''; renderList('rubricList', [], () => {}); });
+});
+
+document.getElementById('sourceFiles').addEventListener('change', async function() {
+  const newFiles = Array.from(this.files);
+  for (const f of newFiles) {
+    state.sourceFiles = state.sourceFiles || [];
+    state.sourceFiles.push(f);
+    state.sourceTexts.push(await readFileAsText(f));
+  }
+  renderList('sourceList', state.sourceFiles, i => {
+    state.sourceFiles.splice(i, 1);
+    state.sourceTexts.splice(i, 1);
+    renderList('sourceList', state.sourceFiles, arguments.callee);
+  });
+});
+
+// Drag and drop for supporting documents
+const sourceDropZone = document.querySelector('.upload-zone[onclick*="sourceFiles"]');
+if (sourceDropZone) {
+  sourceDropZone.addEventListener('dragover', e => { e.preventDefault(); sourceDropZone.style.borderColor = 'var(--gold)'; });
+  sourceDropZone.addEventListener('dragleave', () => { sourceDropZone.style.borderColor = ''; });
+  sourceDropZone.addEventListener('drop', async e => {
+    e.preventDefault();
+    sourceDropZone.style.borderColor = '';
+    state.sourceFiles = state.sourceFiles || [];
+    for (const f of Array.from(e.dataTransfer.files)) {
+      state.sourceFiles.push(f);
+      state.sourceTexts.push(await readFileAsText(f));
+    }
+    renderList('sourceList', state.sourceFiles, i => {
+      state.sourceFiles.splice(i, 1);
+      state.sourceTexts.splice(i, 1);
+      renderList('sourceList', state.sourceFiles, () => {});
+    });
+  });
+}
+
+document.getElementById('essayFiles').addEventListener('change', async function() {
+  for (const f of Array.from(this.files)) {
+    state.essayFiles.push(f);
+    state.essayTexts.push(await readFileAsText(f));
+  }
+  renderList('essayList', state.essayFiles, i => {
+    state.essayFiles.splice(i, 1);
+    state.essayTexts.splice(i, 1);
+    renderList('essayList', state.essayFiles, arguments.callee);
+  });
+});
+
+document.getElementById('toCalibrate').addEventListener('click', () => {
+  if (state.essayFiles.length === 0) {
+    alert('Please upload at least one student essay to continue.');
+    return;
+  }
+  document.getElementById('calibChatLabel').textContent = state.assignmentTitle || 'Assignment';
+  goTo('screenCalibrate');
+  initCalibChat();
+});
+
+// ── CALIBRATION ───────────────────────────────────────────────────────────────
+function selectOption(groupId, btn, key, value) {
+  document.querySelectorAll('#' + groupId + ' .option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state[key] = value;
+}
+
+function initCalibChat() {
+  document.getElementById('calibMessages').innerHTML = '';
+
+  // Build uploaded documents summary
+  const uploaded = [];
+  if (state.assignmentTitle) uploaded.push(`assignment titled "${state.assignmentTitle}"`);
+  if (state.assignmentPrompt) uploaded.push('an assignment prompt');
+  if (state.rubricText) uploaded.push('a rubric');
+  if (state.sourceFiles && state.sourceFiles.length > 0) uploaded.push(`${state.sourceFiles.length} supporting document${state.sourceFiles.length > 1 ? 's' : ''} (${state.sourceFiles.map(f => f.name).join(', ')})`);
+  uploaded.push(`${state.essayFiles.length} student essay${state.essayFiles.length > 1 ? 's' : ''}`);
+  const uploadedSummary = uploaded.length > 1
+    ? uploaded.slice(0, -1).join(', ') + ', and ' + uploaded[uploaded.length - 1]
+    : uploaded[0];
+
+  const sys = `You are Calibrate — a deeply knowledgeable writing feedback assistant built specifically for teachers. You think like an expert educator, not a grading machine.
+
+Your personality: warm, direct, intellectually curious. You ask good questions. You paraphrase back what you heard before acting on it. You push back gently when something is ambiguous. You never just execute an instruction without making sure you understood it correctly first. You sound like a thoughtful colleague, not a chatbot.
+
+Here's what the teacher has uploaded:
+- Assignment: ${state.assignmentTitle || 'Not specified'}
+- Prompt: ${state.assignmentPrompt || 'Not provided'}  
+- Rubric: ${state.rubricText ? 'Yes — uploaded' : 'None — you will use general writing assessment expertise'}
+- Supporting documents: ${state.sourceFiles && state.sourceFiles.length > 0 ? state.sourceFiles.map(f => f.name).join(', ') : 'None'}
+- Student essays: ${state.essayFiles.length} submission${state.essayFiles.length > 1 ? 's' : ''}
+- Tone preference: ${state.tone || 'Not specified — use your judgment'}
+- Feedback length: ${state.length || 'Not specified — use your judgment'}
+
+Open the conversation by warmly acknowledging what you see — what's been uploaded, what you understand about the assignment, and what tone/length they've chosen. Then ask: are there any grading preferences or specific things to watch for before you begin? If not, they can just say "go ahead."
+
+Be genuinely conversational. If they share preferences, paraphrase them back to confirm you understood before accepting them. If something is vague, ask a clarifying question. Don't just say "understood" and move on — show that you actually understood.
+
+IMPORTANT: You cannot see or grade essay content in this chat. If they ask you to grade or give feedback on a specific essay, let them know that happens on the next screen after they click Start Grading, and redirect warmly.`;
+
+  state.calibMessages = [{ role: 'user', content: sys }];
+  addMsg('calibMessages', 'ai', null, true);
+  callAPI(state.calibMessages).then(r => {
+    removeTyping('calibMessages');
+    addMsg('calibMessages', 'ai', r);
+    state.calibMessages.push({ role: 'assistant', content: r });
+    document.getElementById('toGrade').disabled = false;
+  });
+}
+
+let calibTurns = 0;
+document.getElementById('calibSend').addEventListener('click', sendCalib);
+document.getElementById('calibInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCalib(); }
+});
+
+async function sendCalib() {
+  const inp = document.getElementById('calibInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  addMsg('calibMessages', 'user', txt);
+  state.calibMessages.push({ role: 'user', content: txt });
+  calibTurns++;
+  document.getElementById('calibSend').disabled = true;
+  addMsg('calibMessages', 'ai', null, true);
+  const r = await callAPI(state.calibMessages);
+  removeTyping('calibMessages');
+  addMsg('calibMessages', 'ai', r);
+  state.calibMessages.push({ role: 'assistant', content: r });
+  document.getElementById('calibSend').disabled = false;
+  state.calibrationRules = state.calibMessages.slice(1).map(m => `${m.role === 'user' ? 'Teacher' : 'Calibrate'}: ${m.content}`).join('\n\n');
+  document.getElementById('toGrade').disabled = false;
+}
+
+document.getElementById('toGrade').addEventListener('click', () => {
+  state.calibrationRules = `Tone: ${state.tone || 'Balanced and constructive'}\nLength: ${state.length || 'Balanced'}\n\n` + state.calibrationRules;
+  goTo('screenGrade');
+  startGrading();
+});
+
+// ── GRADING ───────────────────────────────────────────────────────────────────
+async function startGrading() {
+  state.results = [];
+  state.currentIndex = 0;
+  const total = state.essayFiles.length;
+  document.getElementById('progressCount').textContent = `0 / ${total}`;
+  document.getElementById('progressList').innerHTML = '';
+
+  state.essayFiles.forEach((f, i) => {
+    const d = document.createElement('div');
+    d.className = 'progress-item';
+    d.id = 'prog-' + i;
+    d.innerHTML = `<div class="progress-status">—</div><div class="progress-name">${f.name.replace(/\.[^/.]+$/, '')}</div><div class="progress-grade" id="grade-${i}"></div>`;
+    document.getElementById('progressList').appendChild(d);
+  });
+
+  // Grade first essay then stop
+  await gradeOne(0);
+  showFirstPaperReview();
+}
+
+async function gradeOne(index) {
+  const item = document.getElementById('prog-' + index);
+  item.classList.add('processing');
+  item.querySelector('.progress-status').textContent = '⟳';
+  document.getElementById('progressLabel').textContent = `Processing ${state.essayFiles[index].name.replace(/\.[^/.]+$/, '')}...`;
+
+  const feedback = await generateFeedback(state.essayTexts[index]);
+  const feedbackText = feedback._isJSON ? feedback._raw : feedback;
+  state.results[index] = { name: state.essayFiles[index].name, feedback: feedbackText, feedbackJSON: feedback._isJSON ? feedback : null, approved: false };
+
+  item.classList.remove('processing');
+  item.classList.add('done');
+  item.querySelector('.progress-status').textContent = '✓';
+  const gm = feedbackText.match(/Writing:\s*([^\s•·\n]+)/);
+  if (gm) document.getElementById('grade-' + index).textContent = gm[1];
+
+  const done = index + 1;
+  document.getElementById('progressCount').textContent = `${done} / ${state.essayFiles.length}`;
+  document.getElementById('progressBar').style.width = (done / state.essayFiles.length * 100) + '%';
+  state.currentIndex = index + 1;
+}
+
+async function generateFeedback(essayText) {
+  const prompt = `You are Calibrate — a deeply knowledgeable writing feedback assistant who thinks like an expert teacher, not a grading machine.
+
+Your philosophy: feedback should be specific, honest, and actionable. You read student writing carefully and respond to what is actually on the page — not to a generic template. You notice what a student is genuinely trying to do, acknowledge what is working, and identify the single most important thing they could improve. You do not overwhelm students with a list of everything wrong. You find the one growth move that would make the biggest difference.
+
+Your voice: warm but direct. You sound like a teacher who has read thousands of essays and genuinely cares whether students improve. Not a machine. Not a checklist. A thoughtful human reader.
+
+CONTEXT:
+Assignment: ${state.assignmentTitle || 'Writing Assignment'}
+Prompt: ${state.assignmentPrompt || 'Not provided'}
+Rubric: ${state.rubricText.substring(0, 2000) || 'No rubric — use expert writing assessment judgment'}
+Supporting materials: ${state.sourceTexts.map(t => t.substring(0, 600)).join('\n---\n') || 'None'}
+Teacher calibration: ${state.calibrationRules.substring(0, 1500) || 'Use best judgment'}
+
+Read this student essay carefully and produce feedback that sounds like a knowledgeable, caring expert wrote it specifically for this student.
+
+Respond with ONLY a valid JSON object — no markdown, no backticks, no extra text. Use this exact structure:
+
+{
+  "score": "Writing: [X]/20 ([4-point grade]) • Analysis: [X]/12 ([4-point grade])",
+  "whatsWorking": "[2-3 sentences specific to this student's actual writing. Reference their exact words where possible. No generic praise.]",
+  "growthMove": "[The single highest-leverage thing this student can work on. Frame it as achievable, not just a critique.]",
+  "tryItHere": "[Point to a specific sentence in their writing. Ask a question that helps them see what is missing — do not answer it for them.]",
+  "rubric": [
+    { "category": "Topic Introduction", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "ID1 Quote & Lead-in", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "ID1 Explanation", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "ID2 Quote & Lead-in", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "ID2 Explanation", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "ID3 Quote & Lead-in", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "ID3 Explanation", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "Ending", "score": "X/2", "comment": "[honest specific comment]" },
+    { "category": "Links", "score": "X/1", "comment": "[honest specific comment]" },
+    { "category": "Vocabulary", "score": "X/1", "comment": "[honest specific comment]" },
+    { "category": "Sentences", "score": "X/1", "comment": "[honest specific comment]" },
+    { "category": "Conventions", "score": "X/1", "comment": "[honest specific comment]" }
+  ],
+  "total": "Total: [X]/20"
+}
+
+Use ONLY the 4-point grade scale. No letter grades. No percentages. Every comment must reference something specific in the essay.
+
+STUDENT ESSAY:
+${essayText.substring(0, 3000)}`;
+
+  const raw = await callAPI([{ role: 'user', content: prompt }], 1600);
+
+  // Parse JSON response
+  try {
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    // Store both structured data and a text representation for the review screen
+    parsed._raw = `${parsed.score}\n\nWhat's working\n${parsed.whatsWorking}\n\nYour one growth move\n${parsed.growthMove}\n\nTry it here\n${parsed.tryItHere}\n\nRubric Breakdown\n${parsed.rubric.map(r => `${r.category}: ${r.score} — ${r.comment}`).join('\n')}\n${parsed.total}`;
+    parsed._isJSON = true;
+    return parsed;
+  } catch(e) {
+    // If JSON parsing fails, return raw text as before
+    return raw;
+  }
+}
+
+function showFirstPaperReview() {
+  document.getElementById('gradingView').style.display = 'none';
+  document.getElementById('firstPaperView').style.display = 'block';
+
+  const r = state.results[0];
+  const name = r.name.replace(/\.[^/.]+$/, '');
+  const gm = r.feedback.match(/Writing:\s*([^\s•·\n]+)/);
+
+  document.getElementById('firstPaperName').textContent = name;
+  document.getElementById('firstPaperGrade').textContent = gm ? gm[1] : '';
+  document.getElementById('firstPaperFeedback').innerHTML = formatFeedbackHTML(r.feedback);
+  document.getElementById('firstPaperEssay').textContent = state.essayTexts[0];
+
+  // Init first paper chat
+  document.getElementById('firstPaperChatMessages').innerHTML = '';
+  firstPaperChatMessages = [];
+  const remaining = state.essayFiles.length - 1;
+  const openMsg = `I've finished grading ${name}. Have a look at the feedback and score above.\n\nIf this looks right, just say "grade all" and I'll work through the remaining ${remaining} submission${remaining !== 1 ? 's' : ''}. You can also say "grade one more" to see another before committing, or tell me anything you'd like me to adjust and I'll make sure I understand before regrading.`;
+  addMsg('firstPaperChatMessages', 'ai', openMsg);
+  firstPaperChatMessages.push({ role: 'assistant', content: openMsg });
+}
+
+let firstPaperChatMessages = [];
+
+document.getElementById('firstPaperChatSend').addEventListener('click', sendFirstPaperChat);
+document.getElementById('firstPaperChatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFirstPaperChat(); }
+});
+
+async function sendFirstPaperChat() {
+  const inp = document.getElementById('firstPaperChatInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  addMsg('firstPaperChatMessages', 'user', txt);
+  firstPaperChatMessages.push({ role: 'user', content: txt });
+  document.getElementById('firstPaperChatSend').disabled = true;
+  addMsg('firstPaperChatMessages', 'ai', null, true);
+
+  const context = `You are Calibrate. The teacher has just reviewed the first graded submission.
+
+First submission: ${state.essayFiles[0].name.replace(/\.[^/.]+$/, '')}
+Current feedback: ${state.results[0].feedback}
+Remaining submissions: ${state.essayFiles.length - state.currentIndex}
+
+The teacher has responded. Interpret their intent naturally:
+- If they want to proceed with all remaining submissions, respond with [GRADE_ALL] followed by a brief confirmation
+- If they want to see one more before deciding, respond with [GRADE_ONE_MORE] followed by a brief confirmation  
+- If they want to make an adjustment, paraphrase what you understood and ask if that's correct BEFORE acting. If they confirm, respond with [ADJUST] followed by their adjustment instruction and a note that you'll regrade
+- If something is ambiguous, ask a clarifying question
+
+Be warm and conversational. Never just execute — always confirm understanding first.`;
+
+  const msgs = [
+    { role: 'user', content: context },
+    ...firstPaperChatMessages
+  ];
+
+  const reply = await callAPI(msgs, 600);
+  removeTyping('firstPaperChatMessages');
+
+  if (reply.includes('[GRADE_ALL]')) {
+    const msg = reply.replace('[GRADE_ALL]', '').trim();
+    addMsg('firstPaperChatMessages', 'ai', msg);
+    firstPaperChatMessages.push({ role: 'assistant', content: msg });
+    document.getElementById('firstPaperChatSend').disabled = false;
+    setTimeout(() => gradeAll(), 800);
+  } else if (reply.includes('[GRADE_ONE_MORE]')) {
+    const msg = reply.replace('[GRADE_ONE_MORE]', '').trim();
+    addMsg('firstPaperChatMessages', 'ai', msg);
+    firstPaperChatMessages.push({ role: 'assistant', content: msg });
+    document.getElementById('firstPaperChatSend').disabled = false;
+    setTimeout(() => gradeOneMore(), 800);
+  } else if (reply.includes('[ADJUST]')) {
+    const adjustInstruction = reply.replace('[ADJUST]', '').trim();
+    addMsg('firstPaperChatMessages', 'ai', adjustInstruction);
+    firstPaperChatMessages.push({ role: 'assistant', content: adjustInstruction });
+    document.getElementById('firstPaperChatSend').disabled = false;
+    state.calibrationRules += `\n\nTEACHER ADJUSTMENT: ${adjustInstruction}`;
+    setTimeout(() => regradeFirst(), 800);
+  } else {
+    addMsg('firstPaperChatMessages', 'ai', reply);
+    firstPaperChatMessages.push({ role: 'assistant', content: reply });
+    document.getElementById('firstPaperChatSend').disabled = false;
+  }
+}
+
+async function regradeFirst() {
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('gradingView').style.display = 'block';
+  document.getElementById('progressLabel').textContent = 'Regrading first submission...';
+
+  const item = document.getElementById('prog-0');
+  item.classList.remove('done');
+  item.classList.add('processing');
+  item.querySelector('.progress-status').textContent = '⟳';
+
+  const feedback = await generateFeedback(state.essayTexts[0]);
+  const feedbackText = feedback._isJSON ? feedback._raw : feedback;
+  state.results[0] = { name: state.essayFiles[0].name, feedback: feedbackText, feedbackJSON: feedback._isJSON ? feedback : null, approved: false };
+  state.currentIndex = 1;
+
+  item.classList.remove('processing');
+  item.classList.add('done');
+  item.querySelector('.progress-status').textContent = '✓';
+
+  showFirstPaperReview();
+}
+
+function formatFeedbackHTML(feedback) {
+  const lines = feedback.split('\n');
+  let html = '';
+  let inRubric = false;
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (trimmed.startsWith('Writing:') && trimmed.includes('Analysis:')) {
+      html += `<div style="background:var(--navy);color:var(--gold);padding:10px 14px;border-radius:8px;font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:14px;">${trimmed}</div>`;
+    } else if (trimmed === "What's working" || trimmed === "Your one growth move" || trimmed === "Try it here" || trimmed === "Rubric Breakdown") {
+      inRubric = trimmed === "Rubric Breakdown";
+      html += `<h4>${trimmed}</h4>`;
+    } else if (inRubric && trimmed.includes(':') && trimmed.includes('—')) {
+      const parts = trimmed.split('—');
+      const leftParts = parts[0].split(':');
+      const category = leftParts[0].trim();
+      const score = leftParts[1] ? leftParts[1].trim() : '';
+      const comment = parts.slice(1).join('—').trim();
+      html += `<div class="rubric-row"><span class="rubric-category">${category}</span><span class="rubric-score">${score}</span><span class="rubric-comment">${comment}</span></div>`;
+    } else if (trimmed.startsWith('Total:')) {
+      html += `<div style="margin-top:10px;font-weight:700;color:var(--navy);font-size:14px;">${trimmed}</div>`;
+    } else {
+      html += `<p>${trimmed}</p>`;
+    }
+  });
+
+  return html;
+}
+
+async function gradeAll() {
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('gradingView').style.display = 'block';
+
+  for (let i = state.currentIndex; i < state.essayFiles.length; i++) {
+    await gradeOne(i);
+  }
+
+  document.getElementById('progressLabel').textContent = 'All done!';
+  showInlineReview();
+}
+
+async function gradeOneMore() {
+  if (state.currentIndex >= state.essayFiles.length) {
+    showInlineReview();
+    return;
+  }
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('gradingView').style.display = 'block';
+  await gradeOne(state.currentIndex);
+  showFirstPaperReview();
+}
+
+function showInlineReview() {
+  document.getElementById('gradingView').style.display = 'none';
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('inlineReviewView').style.display = 'block';
+
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+
+  state.results.forEach((r, i) => {
+    if (!r) return;
+    const name = r.name.replace(/\.[^/.]+$/, '');
+    const gm = r.feedback.match(/Writing:\s*([^\s•·\n]+)/);
+    const score = gm ? gm[1] : '';
+
+    const d = document.createElement('div');
+    d.className = 'review-item';
+    d.innerHTML = `
+      <div class="review-item-header">
+        <div class="review-item-name">${name}</div>
+        <div class="review-item-grade">${score}</div>
+      </div>
+      <div class="review-item-body">
+        <div class="review-feedback-pane">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Feedback — edit below</div>
+          <textarea class="review-feedback-edit" id="feedbackEdit-${i}">${r.feedback}</textarea>
+        </div>
+        <div class="review-essay-pane">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Student Writing</div>
+          <div class="review-essay-text">${(state.essayTexts[i] || '').replace(/\n/g, '<br>')}</div>
+        </div>
+      </div>
+      <div class="review-item-footer">
+        <button class="approve-btn" id="approve-${i}" onclick="approveItem(${i})">✓ Approve</button>
+        <button class="dl-btn" onclick="dlOne(${i})">⬇ Download</button>
+      </div>`;
+    list.appendChild(d);
+  });
+
+  // Initialize the post-grading review chat
+  initReviewChat();
+}
+
+function approveItem(i) {
+  state.results[i].approved = true;
+  state.results[i].feedback = document.getElementById('feedbackEdit-' + i).value;
+  const btn = document.getElementById('approve-' + i);
+  btn.textContent = '✓ Approved';
+  btn.classList.add('approved');
+}
+
+function dlOne(i) {
+  state.results[i].feedback = document.getElementById('feedbackEdit-' + i).value;
+  const r = state.results[i];
+  const name = r.name.replace(/\.[^/.]+$/, '');
+  const essayText = state.essayTexts[i] || '';
+
+  // Use JSON data if available, otherwise parse from text
+  let scoreBar = '', whatsWorking = [], growthMove = [], tryItHere = [], rubricRows = [], total = '';
+
+  if (r.feedbackJSON) {
+    const j = r.feedbackJSON;
+    scoreBar = j.score || '';
+    whatsWorking = [j.whatsWorking || ''];
+    growthMove = [j.growthMove || ''];
+    tryItHere = [j.tryItHere || ''];
+    rubricRows = (j.rubric || []).map(row => ({ cat: row.category, score: row.score, comment: row.comment }));
+    total = j.total || '';
+  } else {
+    // Parse from text as fallback
+    const lines = r.feedback.split('\n');
+    let currentSection = '';
+    let inRubric = false;
+
+    lines.forEach(line => {
+      const t = line.trim();
+      if (!t || t === '---' || t.startsWith('──')) return;
+      const clean = t.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/, '').trim();
+      const lower = clean.toLowerCase();
+
+      if (clean.startsWith('Writing:') && clean.includes('Analysis:')) { scoreBar = clean; return; }
+      if (lower.includes("what's working")) { currentSection = 'working'; inRubric = false; return; }
+      if (lower.includes('growth move')) { currentSection = 'growth'; inRubric = false; return; }
+      if (lower.includes('try it here')) { currentSection = 'try'; inRubric = false; return; }
+      if (lower.includes('rubric breakdown')) { currentSection = 'rubric'; inRubric = true; return; }
+      if (lower.startsWith('total:')) { total = clean; return; }
+
+      if (inRubric && clean.includes(':') && clean.search(/—|–|--/) > 0) {
+        const dashIdx = clean.search(/—|–|--/);
+        const colonIdx = clean.indexOf(':');
+        if (colonIdx > 0 && dashIdx > colonIdx) {
+          rubricRows.push({ cat: clean.substring(0,colonIdx).trim(), score: clean.substring(colonIdx+1,dashIdx).trim(), comment: clean.substring(dashIdx+1).replace(/^[-–—]+/,'').trim() });
+          return;
+        }
+      }
+      if (currentSection === 'working') whatsWorking.push(clean);
+      else if (currentSection === 'growth') growthMove.push(clean);
+      else if (currentSection === 'try') tryItHere.push(clean);
+    });
+  }
+
+  // Build HTML
+  const rubricHTML = rubricRows.map(row => `
+    <tr>
+      <td style="padding:8px 12px;font-weight:600;color:#0f1f3d;border-bottom:1px solid #e2d9c8;width:200px;">${row.cat}</td>
+      <td style="padding:8px 12px;font-weight:700;color:#c8a800;border-bottom:1px solid #e2d9c8;width:50px;">${row.score}</td>
+      <td style="padding:8px 12px;color:#6b7280;border-bottom:1px solid #e2d9c8;">${row.comment}</td>
+    </tr>`).join('');
+
+  const essayHTML = essayText.split('\n').filter(l=>l.trim()).map(l =>
+    `<p style="margin:0 0 10px;font-size:14px;line-height:1.8;color:#374151;">${l.trim()}</p>`
+  ).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${name} — Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'DM Sans', sans-serif; background: #f5f0e8; margin: 0; padding: 32px 20px; color: #1a1a2e; }
+  .page { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .page-header { background: #0f1f3d; padding: 28px 36px; }
+  .page-header h1 { font-family: 'Playfair Display', serif; font-size: 20px; color: #fff; margin: 0 0 4px; }
+  .page-header .student-name { font-size: 14px; color: rgba(255,255,255,0.6); }
+  .score-bar { background: #1a3260; padding: 14px 36px; font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #c8a800; border-bottom: 3px solid #c8a800; }
+  .content { padding: 32px 36px; }
+  .section { margin-bottom: 28px; }
+  .section-label { font-size: 11px; font-weight: 700; color: #0f1f3d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #c8a800; display: inline-block; }
+  .section-body { font-size: 14px; line-height: 1.8; color: #374151; }
+  .section-body em { color: #0f1f3d; font-style: italic; }
+  .growth-box { background: #fffbeb; border-left: 4px solid #c8a800; padding: 16px 20px; border-radius: 0 8px 8px 0; }
+  .try-box { background: #f0f4ff; border-left: 4px solid #0f1f3d; padding: 16px 20px; border-radius: 0 8px 8px 0; font-style: italic; }
+  .divider { border: none; border-top: 1px solid #e2d9c8; margin: 28px 0; }
+  .rubric-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rubric-table th { background: #0f1f3d; color: #c8a800; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .total-row td { background: #f5f0e8; font-weight: 700; color: #0f1f3d; font-size: 15px; padding: 12px; }
+  .essay-section { background: #f5f0e8; padding: 28px 36px; border-top: 3px solid #e2d9c8; }
+  .essay-label { font-size: 11px; font-weight: 700; color: #0f1f3d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  @media print { 
+    body { background: white; padding: 0; } 
+    .page { box-shadow: none; border-radius: 0; } 
+    .print-btn { display: none; }
+  }
+  .print-btn {
+    display: block;
+    width: 100%;
+    max-width: 760px;
+    margin: 16px auto 0;
+    padding: 13px;
+    background: #0f1f3d;
+    color: #c8a800;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .print-btn:hover { background: #1a3260; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <h1>${state.assignmentTitle || 'Writing Assignment'}</h1>
+    <div class="student-name">${name}</div>
+  </div>
+  <div class="score-bar">${scoreBar}</div>
+  <div class="content">
+    <div class="section">
+      <div class="section-label">What's working</div>
+      <div class="section-body">${whatsWorking.join(' ')}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Your one growth move</div>
+      <div class="growth-box section-body">${growthMove.join(' ')}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Try it here</div>
+      <div class="try-box section-body">${tryItHere.join(' ')}</div>
+    </div>
+    <hr class="divider">
+    <div class="section-label" style="margin-bottom:14px;">Rubric Breakdown</div>
+    <table class="rubric-table">
+      <thead><tr><th>Category</th><th>Score</th><th>Feedback</th></tr></thead>
+      <tbody>${rubricHTML}</tbody>
+      <tfoot><tr class="total-row"><td colspan="3">${total}</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="essay-section">
+    <div class="essay-label">Student Writing</div>
+    ${essayHTML}
+  </div>
+</div>
+<button class="print-btn" onclick="window.print()">⬇ Save as PDF</button>
+<scr` + `ipt>
+  document.querySelector('.print-btn').addEventListener('click', () => window.print());
+</scr` + `ipt>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}_Feedback.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('downloadAllBtn').addEventListener('click', () => {
+  state.results.forEach((r, i) => {
+    if (r) setTimeout(() => dlOne(i), i * 400);
+  });
+});
+
+
+// ── REVIEW CHAT ───────────────────────────────────────────────────────────────
+let reviewChatMessages = [];
+
+function initReviewChat() {
+  reviewChatMessages = [];
+  document.getElementById('reviewChatMessages').innerHTML = '';
+
+  const names = state.results.filter(Boolean).map(r => r.name.replace(/\.[^/.]+$/, '')).join(', ');
+  const scores = state.results.filter(Boolean).map(r => {
+    const m = r.feedback.match(/Total:\s*(\d+)\/20/);
+    return m ? parseInt(m[1]) : null;
+  }).filter(Boolean);
+  const avg = scores.length ? Math.round(scores.reduce((a,b) => a+b,0) / scores.length) : '—';
+
+  const openMsg = `Grading is complete for all ${state.results.filter(Boolean).length} submissions. Class average: ${avg}/20.\n\nHow does everything look? Let me know if you'd like any changes — just tell me which student and what to adjust.`;
+  addMsg('reviewChatMessages', 'ai', openMsg);
+  reviewChatMessages.push({ role: 'assistant', content: openMsg });
+}
+
+document.getElementById('reviewChatSend').addEventListener('click', sendReviewChat);
+document.getElementById('reviewChatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReviewChat(); }
+});
+
+async function sendReviewChat() {
+  const inp = document.getElementById('reviewChatInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  addMsg('reviewChatMessages', 'user', txt);
+  reviewChatMessages.push({ role: 'user', content: txt });
+  document.getElementById('reviewChatSend').disabled = true;
+  addMsg('reviewChatMessages', 'ai', null, true);
+
+  // Build context of all current feedback
+  const feedbackContext = state.results.filter(Boolean).map((r, i) => {
+    const name = r.name.replace(/\.[^/.]+$/, '');
+    return `STUDENT ${i+1}: ${name}\nCURRENT FEEDBACK:\n${r.feedback}\n\nSTUDENT ESSAY:\n${(state.essayTexts[i] || '').substring(0, 1500)}`;
+  }).join('\n\n---\n\n');
+
+  const systemContext = `You are Calibrate, an expert AI writing feedback assistant reviewing graded student work.
+
+ASSIGNMENT: ${state.assignmentTitle || 'Writing Assignment'}
+RUBRIC: ${state.rubricText.substring(0, 1000)}
+CALIBRATION: ${state.calibrationRules.substring(0, 800)}
+
+Here is all the graded work:
+${feedbackContext}
+
+The teacher has requested changes. Identify which student(s) they're referring to. If they want a regrade, respond with [REGRADE:StudentName] followed by your updated feedback in the standard format. If they just want a tone or wording adjustment, respond with [ADJUST:StudentName] followed by the updated feedback. If everything is fine, respond normally. Always end by asking if there's anything else to adjust.
+
+IMPORTANT: Use ONLY the 4-point grade scale. No letter grades or percentages.`;
+
+  const msgs = [
+    { role: 'user', content: systemContext },
+    ...reviewChatMessages
+  ];
+
+  const reply = await callAPI(msgs, 1600);
+  removeTyping('reviewChatMessages');
+
+  // Check for regrade/adjust commands
+  const regradeMatch = reply.match(/\[REGRADE:([^\]]+)\]/);
+  const adjustMatch = reply.match(/\[ADJUST:([^\]]+)\]/);
+  const targetMatch = regradeMatch || adjustMatch;
+
+  if (targetMatch) {
+    const targetName = targetMatch[1].trim().toLowerCase();
+    const targetIndex = state.results.findIndex(r =>
+      r && r.name.toLowerCase().includes(targetName)
+    );
+
+    if (targetIndex >= 0) {
+      // Extract the new feedback (everything after the command tag)
+      const newFeedback = reply.replace(/\[(REGRADE|ADJUST):[^\]]+\]/g, '').trim();
+      state.results[targetIndex].feedback = newFeedback;
+
+      // Update the textarea on screen
+      const editArea = document.getElementById('feedbackEdit-' + targetIndex);
+      if (editArea) editArea.value = newFeedback;
+
+      // Update the grade display
+      const gm = newFeedback.match(/Writing:\s*([^\s•·\n]+)/);
+      const header = document.querySelector(`#reviewList .review-item:nth-child(${targetIndex + 1}) .review-item-grade`);
+      if (header && gm) header.textContent = gm[1];
+
+      // Reset approve button
+      const approveBtn = document.getElementById('approve-' + targetIndex);
+      if (approveBtn) { approveBtn.textContent = '✓ Approve'; approveBtn.classList.remove('approved'); }
+
+      const confirmMsg = `I've updated the feedback for ${state.results[targetIndex].name.replace(/\.[^/.]+$/, '')}. The changes are reflected above. Is there anything else you'd like to adjust?`;
+      addMsg('reviewChatMessages', 'ai', confirmMsg);
+      reviewChatMessages.push({ role: 'assistant', content: confirmMsg });
+    } else {
+      addMsg('reviewChatMessages', 'ai', reply.replace(/\[(REGRADE|ADJUST):[^\]]+\]/g, '').trim());
+      reviewChatMessages.push({ role: 'assistant', content: reply });
+    }
+  } else {
+    addMsg('reviewChatMessages', 'ai', reply);
+    reviewChatMessages.push({ role: 'assistant', content: reply });
+  }
+
+  document.getElementById('reviewChatSend').disabled = false;
+}
+
+// ── CHAT HELPERS ──────────────────────────────────────────────────────────────
+function addMsg(containerId, role, text, isTyping = false) {
+  const c = document.getElementById(containerId);
+  const d = document.createElement('div');
+  d.className = 'message ' + role;
+  if (isTyping) d.id = containerId + '_typing';
+  const av = role === 'ai' ? 'C' : 'T';
+  const bubble = isTyping
+    ? `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`
+    : `<div class="msg-bubble">${(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>`;
+  d.innerHTML = `<div class="msg-avatar">${av}</div>${bubble}`;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function removeTyping(containerId) {
+  const t = document.getElementById(containerId + '_typing');
+  if (t) t.remove();
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+const MODEL = 'claude-sonnet-4-5';
+
+async function callAPI(messages, maxTokens = 1000) {
+  try {
+    const res = await fetch(PROXY, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PROXY_TOKEN}`,
+        'x-api-key': state.apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      let errMsg;
+      try {
+        const errJson = JSON.parse(errText);
+        errMsg = errJson.error?.message || errJson.message || errText;
+      } catch {
+        errMsg = errText || `HTTP ${res.status}`;
+      }
+      // Surface a clear, specific error
+      if (res.status === 401) return `API key error: "${errMsg}" — double-check your key at console.anthropic.com`;
+      if (res.status === 429) return `Rate limit or spend limit reached: "${errMsg}" — check your Anthropic account billing`;
+      if (res.status === 503 || res.status === 502) return `Proxy unavailable (${res.status}) — the Replit server may be asleep. Try again in 30 seconds.`;
+      return `Error ${res.status}: ${errMsg}`;
+    }
+
+    const data = await res.json();
+    if (data.content?.[0]?.text) return data.content[0].text;
+    if (data.error) return `API error: ${data.error.message}`;
+    return 'Something went wrong — no content returned. Please try again.';
+
+  } catch (err) {
+    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      return `Network error: Could not reach the proxy server. Check your internet connection, or the Replit proxy may be down.`;
+    }
+    return `Unexpected error: ${err.message}`;
+  }
+}
+</script>
+</body>
+</html>
