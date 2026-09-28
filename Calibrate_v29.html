@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calibrate</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1f3d;
+    --navy-light: #1a3260;
+    --gold: #c8a800;
+    --gold-light: #f0cc00;
+    --cream: #f5f0e8;
+    --white: #ffffff;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e2d9c8;
+    --text: #1a1a2e;
+    --success: #16a34a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--navy); padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--white); }
+  .logo span { color: var(--gold); }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-api { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .header-api span { color: var(--gold); font-weight: 600; }
+
+  /* SCREENS */
+  .screen { display: none; animation: fadeIn 0.3s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .main { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+  /* DASHBOARD */
+  .dashboard-welcome { background: var(--navy); border-radius: 16px; padding: 32px; margin-bottom: 28px; }
+  .dashboard-welcome h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--white); margin-bottom: 6px; }
+  .dashboard-welcome p { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
+
+  .dash-chat { background: rgba(255,255,255,0.07); border-radius: 12px; overflow: hidden; }
+  .dash-chat-msgs { padding: 20px; min-height: 80px; }
+  .dash-chat-input { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .dash-chat-input textarea { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 14px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 14px; resize: none; min-height: 42px; }
+  .dash-chat-input textarea::placeholder { color: rgba(255,255,255,0.4); }
+  .dash-chat-input textarea:focus { outline: none; border-color: var(--gold); }
+  .dash-send { width: 42px; height: 42px; border-radius: 8px; background: var(--gold); border: none; color: var(--navy); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .dash-send:hover { background: var(--gold-light); }
+
+  .dash-msg { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.85); margin-bottom: 8px; }
+  .dash-msg.user { color: var(--gold); text-align: right; }
+
+  /* DASHBOARD GRID */
+  .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .dash-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .dash-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .dash-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .dash-card-label { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+  .dash-card-count { font-size: 11px; color: var(--gray); }
+  .dash-card-badge { position: absolute; top: 10px; right: 10px; background: var(--gold); color: var(--navy); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .coming-soon { position: absolute; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--gray); letter-spacing: 0.5px; opacity: 0; transition: opacity 0.2s; border-radius: 12px; }
+  .dash-card:hover .coming-soon { opacity: 1; }
+
+  .dash-new-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--navy); border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .dash-new-btn:hover { background: var(--gold-light); }
+
+  /* MODALS */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: var(--white); border-radius: 16px; padding: 32px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+  .modal input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; margin-bottom: 16px; }
+  .modal input:focus { outline: none; border-color: var(--gold); }
+  .modal-btn { width: 100%; padding: 12px; background: var(--navy); color: var(--white); border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-btn:hover { background: var(--navy-light); }
+  .modal select { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; margin-bottom: 12px; background: var(--white); }
+  .preview-text { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; line-height: 1.7; white-space: pre-wrap; max-height: 45vh; overflow-y: auto; margin-bottom: 16px; }
+  .preview-names { font-size: 12px; color: var(--navy); margin-bottom: 10px; }
+
+  /* STEP HEADER */
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .step-back { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--navy); cursor: pointer; }
+  .step-back:hover { border-color: var(--navy); }
+  .step-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--navy); }
+  .step-sub { font-size: 14px; color: var(--gray); margin-top: 4px; }
+
+  /* CARDS */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; margin-bottom: 18px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .card-sub { font-size: 13px; color: var(--gray); margin-bottom: 18px; }
+
+  /* PRIVACY NOTES */
+  .privacy-note { font-size: 12px; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 9px 13px; margin-bottom: 12px; line-height: 1.5; }
+  .photo-note { font-size: 12px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 9px 13px; margin-top: 12px; line-height: 1.5; }
+
+  /* UPLOAD */
+  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--cream); position: relative; }
+  .upload-zone:hover { border-color: var(--gold); background: #fdf9ee; }
+  .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-label { font-size: 13px; font-weight: 500; color: var(--navy); margin-bottom: 3px; }
+  .upload-hint { font-size: 11px; color: var(--gray); }
+  .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .file-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--gray-light); border-radius: 6px; font-size: 12px; }
+  .file-main { flex: 1; min-width: 0; }
+  .file-name { flex: 1; font-weight: 500; overflow-wrap: anywhere; }
+  .file-privacy { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .file-privacy .warn { color: #b45309; }
+  .file-size { color: var(--gray); font-size: 11px; white-space: nowrap; }
+  .file-remove, .file-rename { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 15px; padding: 0 2px; }
+  .file-remove:hover { color: #dc2626; }
+  .file-rename:hover { color: var(--navy); }
+  .file-addpage { background: var(--white); border: 1px solid var(--border); border-radius: 6px; color: var(--navy); cursor: pointer; font-size: 11px; font-weight: 600; padding: 3px 8px; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+  .file-addpage:hover { border-color: var(--gold); }
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  /* INPUTS */
+  .field-label { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; display: block; }
+  textarea, input[type="text"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--white); transition: border-color 0.2s; resize: vertical; }
+  textarea:focus, input:focus { outline: none; border-color: var(--gold); }
+
+  /* TONE/LENGTH OPTIONS */
+  .option-group { display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .option-btn { padding: 8px 18px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--navy); cursor: pointer; transition: all 0.15s; }
+  .option-btn:hover { border-color: var(--gold); }
+  .option-btn.selected { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .option-hint { font-size: 12px; color: var(--gray); margin-top: 6px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--navy); color: var(--white); }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-gold:hover { background: var(--gold-light); }
+  .btn-outline { background: transparent; color: var(--navy); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--navy); }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+  /* CHAT */
+  .chat-container { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; height: 400px; overflow: hidden; margin-bottom: 16px; }
+  .chat-header { padding: 14px 18px; display: flex; align-items: center; gap: 10px; background: var(--navy); color: var(--white); }
+  .chat-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+  .chat-header-text { font-size: 13px; font-weight: 500; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .message { display: flex; gap: 10px; animation: fadeIn 0.2s ease; }
+  .message.user { flex-direction: row-reverse; }
+  .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .message.ai .msg-avatar { background: var(--navy); color: var(--gold); }
+  .message.user .msg-avatar { background: var(--gold); color: var(--navy); }
+  .msg-bubble { max-width: 78%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+  .message.ai .msg-bubble { background: var(--gray-light); color: var(--text); border-bottom-left-radius: 4px; }
+  .message.user .msg-bubble { background: var(--navy); color: var(--white); border-bottom-right-radius: 4px; }
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+  .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gray); animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+  .chat-input-area { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-end; }
+  .chat-input { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; resize: none; min-height: 40px; max-height: 100px; }
+  .chat-input:focus { outline: none; border-color: var(--gold); }
+  .chat-send { width: 40px; height: 40px; border-radius: 8px; background: var(--navy); border: none; color: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .chat-send:hover { background: var(--navy-light); }
+  .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* PROGRESS */
+  .progress-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin: 16px 0; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.5s ease; }
+  .progress-list { display: flex; flex-direction: column; gap: 8px; }
+  .progress-item { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; transition: all 0.3s; }
+  .progress-item.processing { border-color: var(--gold); background: #fffbeb; }
+  .progress-item.done { border-color: #bbf7d0; background: #f0fdf4; }
+  .progress-status { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; background: var(--gray-light); color: var(--gray); }
+  .progress-item.processing .progress-status { background: var(--gold); color: var(--navy); animation: pulse 1s infinite; }
+  .progress-item.done .progress-status { background: var(--success); color: var(--white); }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  .progress-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .progress-grade { font-size: 12px; font-weight: 600; color: var(--navy); font-family: 'Playfair Display', serif; }
+
+  /* SUBMISSION REVIEW */
+  .first-paper-box { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+  .first-paper-header { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .first-paper-header-text { font-size: 14px; font-weight: 600; color: var(--white); }
+  .first-paper-grade { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--gold); text-align: right; }
+  .first-paper-body { display: grid; grid-template-columns: 1fr 1fr; min-height: 400px; }
+  .first-paper-feedback { padding: 20px; border-right: 1px solid var(--border); overflow-y: auto; max-height: 500px; }
+  .first-paper-essay { padding: 20px; overflow-y: auto; max-height: 500px; background: var(--cream); }
+  .first-paper-feedback h4 { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 16px; }
+  .first-paper-feedback h4:first-child { margin-top: 0; }
+  .first-paper-feedback p { font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px; }
+  .first-paper-essay p { font-size: 13px; color: var(--text); line-height: 1.7; white-space: pre-wrap; }
+  .first-paper-essay h4 { font-size: 12px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .transcribed-note { font-size: 11px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
+  .score-summary { background: var(--navy); color: var(--gold); padding: 10px 14px; border-radius: 8px; font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .rubric-row { display: flex; gap: 10px; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .rubric-category { font-weight: 600; color: var(--navy); min-width: 140px; max-width: 180px; flex-shrink: 0; }
+  .rubric-score { color: var(--gold); font-weight: 700; min-width: 44px; }
+  .rubric-comment { color: var(--text); flex: 1; line-height: 1.5; }
+
+  /* INLINE REVIEW */
+  .review-list { display: flex; flex-direction: column; gap: 20px; }
+  .review-item { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .review-item-header { background: var(--navy); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .review-item-name { font-size: 14px; font-weight: 600; color: var(--white); }
+  .review-item-grade { font-family: 'Playfair Display', serif; font-size: 14px; color: var(--gold); text-align: right; }
+  .review-item-body { display: grid; grid-template-columns: 1fr 1fr; }
+  .review-feedback-pane { padding: 18px; border-right: 1px solid var(--border); }
+  .review-essay-pane { padding: 18px; background: var(--cream); }
+  .review-feedback-edit { width: 100%; min-height: 300px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; line-height: 1.7; color: var(--text); background: var(--white); resize: vertical; }
+  .review-feedback-edit:focus { outline: none; border-color: var(--gold); }
+  .review-essay-text { font-size: 12px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
+  .review-item-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: var(--gray-light); }
+  .approve-btn { padding: 7px 18px; background: var(--success); color: var(--white); border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .approve-btn.approved { background: #dcfce7; color: var(--success); cursor: default; }
+  .dl-btn { padding: 7px 18px; background: var(--navy); color: var(--white); border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  @media (max-width: 640px) {
+    .dash-grid { grid-template-columns: repeat(2, 1fr); }
+    .upload-grid { grid-template-columns: 1fr; }
+    .first-paper-body { grid-template-columns: 1fr; }
+    .review-item-body { grid-template-columns: 1fr; }
+    .first-paper-feedback, .review-feedback-pane { border-right: none; border-bottom: 1px solid var(--border); }
+    .card { padding: 20px 16px; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h2>Welcome to Calibrate</h2>
+    <p>Enter your Anthropic API key to get started. Your key is kept only in this browser tab while you work and is passed to Anthropic through Calibrate's relay server. Calibrate does not save it.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off"/>
+    <button class="modal-btn" id="apiSubmit">Get Started →</button>
+    <p style="font-size:11px;color:var(--gray);margin-top:12px;text-align:center;">Need a key? <a href="https://console.anthropic.com" target="_blank" style="color:var(--navy);">console.anthropic.com</a> — costs ~$0.01–0.03 per essay</p>
+  </div>
+</div>
+
+<!-- PRIVACY PREVIEW MODAL -->
+<div class="modal-overlay" id="previewModal" style="display:none;">
+  <div class="modal" style="max-width:680px;">
+    <h2>What the AI sees</h2>
+    <p>Student names from your file names are swapped for labels before anything leaves this browser. Check a few submissions to make sure every name is hidden.</p>
+    <select id="previewSelect"></select>
+    <div class="preview-names" id="previewNames"></div>
+    <div class="preview-text" id="previewText"></div>
+    <button class="modal-btn" id="previewClose">Close</button>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo">Calibrate<span>.</span></div>
+  <div class="header-right">
+    <div class="header-api" id="headerApiStatus"></div>
+  </div>
+</div>
+
+<!-- SCREEN: DASHBOARD -->
+<div class="screen active" id="screenDash">
+  <div class="main">
+    <div class="dashboard-welcome">
+      <h1>Welcome back.</h1>
+      <p>What would you like to do today?</p>
+      <div class="dash-chat">
+        <div class="dash-chat-msgs" id="dashMsgs">
+          <div class="dash-msg">👋 Welcome! You can give me specific instructions, or just upload your prompt, rubric, and any supporting documents and we can get started. What would you like to do today?</div>
+        </div>
+        <div class="dash-chat-input">
+          <textarea id="dashInput" rows="1" placeholder="Type a message or click 'Start New Assignment' below..."></textarea>
+          <button class="dash-send" id="dashSend">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">📁</div>
+        <div class="dash-card-label">Assignments</div>
+        <div class="dash-card-count">All assignments</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">📋</div>
+        <div class="dash-card-label">Rubrics</div>
+        <div class="dash-card-count">Saved rubrics</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">✅</div>
+        <div class="dash-card-label">Graded</div>
+        <div class="dash-card-count">Completed</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+      <div class="dash-card" onclick="showComingSoon(this)">
+        <div class="dash-card-icon">⏳</div>
+        <div class="dash-card-label">Pending Review</div>
+        <div class="dash-card-count">Awaiting approval</div>
+        <div class="dash-card-badge">0</div>
+        <div class="coming-soon">Coming Soon</div>
+      </div>
+    </div>
+
+    <button class="dash-new-btn" id="startNewBtn">+ Start New Assignment</button>
+  </div>
+</div>
+
+<!-- SCREEN: SETUP -->
+<div class="screen" id="screenSetup">
+  <div class="main">
+    <div class="step-header">
+      <button class="step-back" onclick="goTo('screenDash')">← Dashboard</button>
+      <div>
+        <div class="step-title">Set up your assignment</div>
+        <div class="step-sub">Upload your materials and choose a feedback style. Only student submissions are required.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Assignment Details</div>
+      <div class="card-sub">Give Calibrate context about the assignment.</div>
+      <label class="field-label" style="margin-bottom:6px;">Assignment Title</label>
+      <input type="text" id="assignmentTitle" placeholder="e.g. Topic 5: Ancient Greece Writing and Analysis Assessment" style="margin-bottom:14px;"/>
+      <label class="field-label">Assignment Prompt <span style="font-weight:400;color:var(--gray)">(optional)</span></label>
+      <textarea id="assignmentPrompt" rows="3" placeholder="Paste the prompt students were given..."></textarea>
+    </div>
+
+    <div class="upload-grid">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Rubric <span style="font-weight:400;font-size:13px;color:var(--gray)">(optional)</span></div>
+        <div class="card-sub">Upload your grading rubric. Scores will follow its categories and scale.</div>
+        <div class="upload-zone"><input type="file" id="rubricFile" accept=".pdf,.docx,.txt"/><div class="upload-icon">📋</div><div class="upload-label">Drop rubric here</div><div class="upload-hint">PDF, DOCX, or TXT</div></div>
+        <div class="file-list" id="rubricList"></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">Additional Supporting Documents <span style="font-weight:400;font-size:13px;color:var(--gray)">(optional)</span></div>
+        <div class="card-sub">Source texts, vocabulary lists, anchor examples, exemplars, or any other supporting materials.</div>
+        <div class="upload-zone" id="sourceDropZone" style="cursor:pointer;">
+          <input type="file" id="sourceFiles" accept=".pdf,.docx,.txt" multiple/>
+          <div class="upload-icon">📎</div>
+          <div class="upload-label">Click or drop supporting documents here</div>
+          <div class="upload-hint">Multiple files allowed</div>
+        </div>
+        <div class="file-list" id="sourceList"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="card-title">Student Submissions</div>
+      <div class="card-sub">Upload typed essays or photos of handwritten work. Name each file after the student.</div>
+      <div class="privacy-note">🔒 Student names are taken from your file names and replaced with labels like "Student 1" before anything is sent to the AI. Real names are swapped back in only on your screen.</div>
+      <div class="upload-zone"><input type="file" id="essayFiles" accept=".pdf,.docx,.txt,image/*" multiple/><div class="upload-icon">📝</div><div class="upload-label">Drop student work here</div><div class="upload-hint">DOCX, PDF, TXT, or photos (JPG, PNG). For handwritten work with several pages, use "+ Page" to add more photos.</div></div>
+      <div class="photo-note">📷 <strong>Photos:</strong> a name written on the page can't be hidden automatically. Cover or fold over the student's name before taking the picture.</div>
+      <div class="file-list" id="essayList"></div>
+      <button class="btn btn-outline btn-sm" id="previewBtn" style="display:none;margin-top:12px;">🔍 Preview what the AI sees</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Feedback Style</div>
+      <div class="card-sub">"What's working," "Your one growth move," and "Try it here" are always one sentence each. Length below controls the rubric comments.</div>
+      <label class="field-label">Tone</label>
+      <div class="option-group" id="toneGroup">
+        <button class="option-btn" onclick="selectOption('toneGroup', this, 'tone', 'Friendly')">😊 Friendly</button>
+        <button class="option-btn" onclick="selectOption('toneGroup', this, 'tone', 'Direct')">🎯 Direct</button>
+        <button class="option-btn" onclick="selectOption('toneGroup', this, 'tone', 'Academic')">🎓 Academic</button>
+      </div>
+      <label class="field-label" style="margin-top:16px;">Rubric Comment Length</label>
+      <div class="option-group" id="lengthGroup">
+        <button class="option-btn" onclick="selectOption('lengthGroup', this, 'length', 'Brief')">Brief</button>
+        <button class="option-btn" onclick="selectOption('lengthGroup', this, 'length', 'Balanced')">Balanced</button>
+        <button class="option-btn" onclick="selectOption('lengthGroup', this, 'length', 'Detailed')">Detailed</button>
+      </div>
+      <div class="option-hint">Optional. If you skip these, Calibrate uses a balanced, constructive default.</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="toCalibrate">Continue to Calibration →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: CALIBRATE -->
+<div class="screen" id="screenCalibrate">
+  <div class="main">
+    <div class="step-header">
+      <button class="step-back" onclick="goTo('screenSetup')">← Back</button>
+      <div>
+        <div class="step-title">Calibrate your feedback</div>
+        <div class="step-sub">Calibrate has reviewed your materials. Add any grading preferences, or click Start Grading.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Grading Preferences</div>
+      <div class="card-sub">Tell Calibrate how you grade: what you value, what to watch for, how strict to be. This chat is for preferences only; essay feedback happens on the next screen.</div>
+      <div class="chat-container">
+        <div class="chat-header"><div class="chat-dot"></div><div class="chat-header-text">Calibration Chat — <span id="calibChatLabel">Assignment</span></div></div>
+        <div class="chat-messages" id="calibMessages"></div>
+        <div class="chat-input-area">
+          <textarea class="chat-input" id="calibInput" rows="1" placeholder="Share grading preferences..."></textarea>
+          <button class="chat-send" id="calibSend">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-outline btn-sm" onclick="goTo('screenSetup')">← Back</button>
+      <button class="btn btn-primary" id="toGrade">Start Grading →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: GRADING -->
+<div class="screen" id="screenGrade">
+  <div class="main">
+
+    <!-- GENERATING VIEW -->
+    <div id="gradingView">
+      <div class="step-title" style="margin-bottom:6px;">Grading in progress</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:24px;">Processing submissions one at a time.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:13px;color:var(--gray);" id="progressLabel">Starting...</span>
+        <span style="font-size:13px;font-weight:600;color:var(--navy);" id="progressCount">0 / 0</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+      <div class="progress-list" id="progressList"></div>
+    </div>
+
+    <!-- SUBMISSION REVIEW -->
+    <div id="firstPaperView" style="display:none;">
+      <div class="step-title" style="margin-bottom:6px;" id="firstPaperTitle">First submission graded</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:20px;">Have a look at the feedback and score. Let me know if you'd like any changes before I continue.</div>
+
+      <div class="first-paper-box">
+        <div class="first-paper-header">
+          <div class="first-paper-header-text" id="firstPaperName">Student Name</div>
+          <div class="first-paper-grade" id="firstPaperGrade"></div>
+        </div>
+        <div class="first-paper-body">
+          <div class="first-paper-feedback" id="firstPaperFeedback"></div>
+          <div class="first-paper-essay">
+            <h4>Student Writing</h4>
+            <div id="firstPaperNote"></div>
+            <p id="firstPaperEssay"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">How does this look?</div>
+        <div class="card-sub">Ask for changes, say "grade one more," or say "grade all" to continue.</div>
+        <div class="chat-container" style="height:300px;">
+          <div class="chat-header"><div class="chat-dot"></div><div class="chat-header-text">Submission Review</div></div>
+          <div class="chat-messages" id="firstPaperChatMessages"></div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="firstPaperChatInput" rows="1" placeholder="Looks good — grade all. Or: be less harsh on organization..."></textarea>
+            <button class="chat-send" id="firstPaperChatSend">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INLINE REVIEW VIEW -->
+    <div id="inlineReviewView" style="display:none;">
+      <div class="step-title" style="margin-bottom:6px;">Review & Edit Feedback</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:20px;">Edit any feedback directly before downloading. Your edits are what gets downloaded. Use the chat below to request changes to specific submissions.</div>
+
+      <div class="review-list" id="reviewList"></div>
+
+      <div class="card" style="margin-top:24px;">
+        <div class="card-title">Need to make changes?</div>
+        <div class="card-sub">Tell Calibrate which student needs adjusting and what to change. It will update the feedback above.</div>
+        <div class="chat-container" style="height:320px;">
+          <div class="chat-header"><div class="chat-dot"></div><div class="chat-header-text">Post-Grading Review Chat</div></div>
+          <div class="chat-messages" id="reviewChatMessages"></div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="reviewChatInput" rows="1" placeholder="e.g. Maya's score is too high. Be less harsh on Jordan's organization..."></textarea>
+            <button class="chat-send" id="reviewChatSend">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="goTo('screenDash')">Back to Dashboard</button>
+        <button class="btn btn-gold" id="downloadAllBtn">⬇ Download All</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const PROXY = 'https://calibrate-proxy.onrender.com/api/anthropic/v1/messages';
+const PROXY_TOKEN = 'calibrate-beta-2026';
+const MODEL = 'claude-sonnet-4-5';
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+// Each submission: { kind: 'text' | 'photo', name, key, size, text, images: [base64 jpeg] }
+const state = {
+  apiKey: '',
+  assignmentTitle: '',
+  assignmentPrompt: '',
+  rubricText: '',
+  sourceFiles: [],
+  sourceTexts: [],
+  essays: [],
+  tone: '',
+  length: '',
+  calibrationRules: '',
+  calibMessages: [],
+  calibInitialized: false,
+  results: [],
+  currentIndex: 0,
+  reviewIndex: 0
+};
+
+// ── SMALL HELPERS ────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function baseName(n) { return String(n).replace(/\.[^/.]+$/, ''); }
+function displayName(e) { return baseName(e.name).replace(/_+/g, ' ').replace(/\s+/g, ' ').trim(); }
+function fmt(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+// ── PRIVACY: NAME MASKING ────────────────────────────────────────────────────
+// Student names come from file names. Before any text is sent to the AI, every
+// student name is replaced with "Student N". Replies are swapped back to real
+// first names on the teacher's screen only. The name list never leaves the browser.
+const NAME_STOP = new Set(('essay essays final draft rough assignment assign copy paper writing written submission submit ' +
+  'doc docx document pdf txt topic unit hw homework version ver rev revised revision period per pd block grade test quiz ' +
+  'project report response dbq analysis journal the and of for by img image photo scan scanned page pg new old edit edited ' +
+  'feedback student students class ss ela social studies untitled file part sample example exemplar anchor jpg jpeg png heic ' +
+  'webp gif').split(' '));
+const B_L = '(?<![\\p{L}\\p{N}])';
+const B_R = '(?![\\p{L}\\p{N}])';
+
+function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function capWord(t) { return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase(); }
+
+function nameParts(fileName) {
+  return baseName(fileName)
+    .split(/[\s_\-.,()\[\]+]+/)
+    .filter(t => t.length >= 2 && !/\d/.test(t) && !NAME_STOP.has(t.toLowerCase()));
+}
+
+// Only capitalized forms are matched for single names, so a student named "Will"
+// doesn't erase the word "will" from every essay.
+function nameVariants(t) {
+  const v = new Set([capWord(t), t.toUpperCase(), t.charAt(0).toUpperCase() + t.slice(1)]);
+  if (/^[A-Z]/.test(t)) v.add(t);
+  return [...v];
+}
+
+function getNameMap() {
+  const materials = [state.assignmentTitle, state.assignmentPrompt, state.rubricText, ...state.sourceTexts].join('\n');
+  const students = state.essays.map((e, i) => {
+    const parts = nameParts(e.name);
+    return { alias: `Student ${i + 1}`, parts, first: parts[0] ? capWord(parts[0]) : displayName(e), hidden: [], skipped: [] };
+  });
+
+  const owners = new Map();
+  students.forEach((s, i) => {
+    s.parts.forEach(p => {
+      const vs = nameVariants(p);
+      // A word that also appears in the assignment materials (e.g. "Greece") is not treated as a name.
+      const inMaterials = materials && vs.some(v => new RegExp(B_L + escRe(v) + B_R, 'u').test(materials));
+      if (inMaterials) { if (!s.skipped.includes(p)) s.skipped.push(p); return; }
+      if (!s.hidden.includes(p)) s.hidden.push(p);
+      const k = p.toLowerCase();
+      if (!owners.has(k)) owners.set(k, { idxs: new Set(), vs: new Set() });
+      const o = owners.get(k);
+      o.idxs.add(i);
+      vs.forEach(v => o.vs.add(v));
+    });
+  });
+
+  const fullRegs = students
+    .map(s => s.parts.length >= 2 ? { re: new RegExp(B_L + s.parts.map(escRe).join('[\\s_\\-]+') + B_R, 'giu'), alias: s.alias, len: s.parts.join(' ').length } : null)
+    .filter(Boolean)
+    .sort((a, b) => b.len - a.len);
+
+  const tokenRegs = [...owners.entries()]
+    .sort((a, b) => b[0].length - a[0].length)
+    .map(([k, o]) => ({
+      re: new RegExp(B_L + '(?:' + [...o.vs].map(escRe).join('|') + ')' + B_R, 'gu'),
+      // A first name shared by two students becomes a neutral label.
+      alias: o.idxs.size === 1 ? students[[...o.idxs][0]].alias : '[Student]'
+    }));
+
+  function mask(text) {
+    if (!text) return text;
+    let out = String(text);
+    fullRegs.forEach(r => { out = out.replace(r.re, r.alias); });
+    tokenRegs.forEach(r => { out = out.replace(r.re, r.alias); });
+    return out;
+  }
+
+  function unmask(text) {
+    return String(text ?? '').replace(/\bStudent (\d+)\b/g, (m, n) => {
+      const s = students[parseInt(n, 10) - 1];
+      return s ? s.first : m;
+    });
+  }
+
+  return { students, mask, unmask };
+}
+
+function maskContent(content, nm) {
+  if (typeof content === 'string') return nm.mask(content);
+  if (Array.isArray(content)) return content.map(b => b.type === 'text' ? { ...b, text: nm.mask(b.text) } : b);
+  return content;
+}
+// ── END PRIVACY ──────────────────────────────────────────────────────────────
+
+// ── API MODAL ─────────────────────────────────────────────────────────────────
+document.getElementById('apiSubmit').addEventListener('click', () => {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || key.length < 10) {
+    document.getElementById('apiKeyInput').style.borderColor = '#dc2626';
+    document.getElementById('apiKeyInput').placeholder = 'Please paste your API key first...';
+    return;
+  }
+  state.apiKey = key;
+  document.getElementById('apiModal').style.display = 'none';
+  document.getElementById('headerApiStatus').innerHTML = 'API Key: <span>Active</span>';
+});
+document.getElementById('apiKeyInput').addEventListener('input', function() { this.style.borderColor = ''; });
+document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('apiSubmit').click(); });
+document.getElementById('apiKeyInput').addEventListener('paste', function() {
+  setTimeout(() => { if (this.value.trim().length > 10) this.style.borderColor = '#16a34a'; }, 100);
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showComingSoon(el) {
+  const cs = el.querySelector('.coming-soon');
+  cs.style.opacity = '1';
+  setTimeout(() => cs.style.opacity = '0', 1500);
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+document.getElementById('startNewBtn').addEventListener('click', () => {
+  Object.assign(state, {
+    assignmentTitle: '', assignmentPrompt: '', rubricText: '', sourceFiles: [], sourceTexts: [], essays: [],
+    tone: '', length: '', calibrationRules: '', calibMessages: [], calibInitialized: false,
+    results: [], currentIndex: 0, reviewIndex: 0
+  });
+  ['rubricList', 'sourceList', 'essayList'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+  ['rubricFile', 'sourceFiles', 'essayFiles', 'assignmentTitle', 'assignmentPrompt'].forEach(id => { document.getElementById(id).value = ''; });
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('previewBtn').style.display = 'none';
+  goTo('screenSetup');
+});
+
+document.getElementById('dashSend').addEventListener('click', sendDashMsg);
+document.getElementById('dashInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDashMsg(); }
+});
+
+function sendDashMsg() {
+  const inp = document.getElementById('dashInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  const msgs = document.getElementById('dashMsgs');
+  const d = document.createElement('div');
+  d.className = 'dash-msg user';
+  d.textContent = txt;
+  msgs.appendChild(d);
+  setTimeout(() => {
+    const r = document.createElement('div');
+    r.className = 'dash-msg';
+    r.textContent = "Got it! Let's get started. Click 'Start New Assignment' to set up your materials, or go ahead and tell me more about what you're working on.";
+    msgs.appendChild(r);
+  }, 600);
+}
+
+// ── FILE READING ──────────────────────────────────────────────────────────────
+function readFileAsText(file) {
+  const name = file.name.toLowerCase();
+
+  if (name.endsWith('.docx')) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        mammoth.extractRawText({ arrayBuffer: e.target.result })
+          .then(result => resolve(result.value || '[Empty document]'))
+          .catch(() => resolve('[Could not read .docx: ' + file.name + ']'));
+      };
+      reader.onerror = () => resolve('[Could not read: ' + file.name + ']');
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  if (name.endsWith('.pdf')) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async e => {
+        try {
+          const pdfjsLib = window['pdfjs-dist/build/pdf'];
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+          const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(e.target.result), disableWorker: true }).promise;
+          let fullText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            fullText += content.items.map(item => item.str).join(' ') + '\n\n';
+          }
+          const cleaned = fullText.replace(/\n{3,}/g, '\n\n').trim();
+          resolve(cleaned || '[Could not extract text from PDF: ' + file.name + ']');
+        } catch (err) {
+          resolve('[Could not extract text from PDF: ' + file.name + ' — ' + err.message + ']');
+        }
+      };
+      reader.onerror = () => resolve('[Could not read: ' + file.name + ']');
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => resolve('[Could not read: ' + file.name + ']');
+    reader.readAsText(file);
+  });
+}
+
+function isImageFile(f) {
+  return (f.type && f.type.startsWith('image/')) || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name);
+}
+
+// Converts any photo to a resized JPEG. This also strips hidden photo data
+// such as GPS location before anything is sent.
+function imageToJpeg(file, maxDim = 1568) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const s = Math.min(1, maxDim / Math.max(w, h));
+      w = Math.round(w * s); h = Math.round(h * s);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
+    img.src = url;
+  });
+}
+
+const CAMERA_NAME = /^(img|dsc|dscn|pxl|photo|image|scan|screenshot|pic)[\s_\-]?\d/i;
+const PAGE_SUFFIX = /[\s_\-]*(?:p|pg|page)?[\s_\-]*\d+$/i;
+
+// Photos named like "Maya_Torres_1.jpg" and "Maya_Torres_2.jpg" become one submission.
+function photoKey(name) {
+  const b = baseName(name);
+  if (CAMERA_NAME.test(b)) return 'single:' + b + ':' + Math.random();
+  const stripped = b.replace(PAGE_SUFFIX, '').trim();
+  return stripped ? stripped.toLowerCase() : 'single:' + Math.random();
+}
+function photoEntryName(name) {
+  const b = baseName(name);
+  if (CAMERA_NAME.test(b)) return name;
+  const stripped = b.replace(PAGE_SUFFIX, '').trim();
+  return (stripped || b) + '.jpg';
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────────
+function renderList(id, files, onRemove) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  files.forEach((f, i) => {
+    const d = document.createElement('div');
+    d.className = 'file-item';
+    d.innerHTML = `<span>📄</span><span class="file-name">${esc(f.name)}</span><span class="file-size">${fmt(f.size)}</span><button class="file-remove" title="Remove">×</button>`;
+    d.querySelector('.file-remove').onclick = () => onRemove(i);
+    el.appendChild(d);
+  });
+}
+
+function renderSourceList() {
+  renderList('sourceList', state.sourceFiles, i => {
+    state.sourceFiles.splice(i, 1);
+    state.sourceTexts.splice(i, 1);
+    renderSourceList();
+    renderEssayList();
+  });
+}
+
+document.getElementById('assignmentTitle').addEventListener('input', function() { state.assignmentTitle = this.value.trim(); renderEssayList(); });
+document.getElementById('assignmentPrompt').addEventListener('input', function() { state.assignmentPrompt = this.value.trim(); renderEssayList(); });
+
+document.getElementById('rubricFile').addEventListener('change', async function() {
+  const f = this.files[0];
+  if (!f) return;
+  state.rubricText = await readFileAsText(f);
+  renderList('rubricList', [f], () => {
+    state.rubricText = '';
+    document.getElementById('rubricFile').value = '';
+    renderList('rubricList', [], () => {});
+    renderEssayList();
+  });
+  renderEssayList();
+});
+
+async function addSourceFiles(files) {
+  for (const f of files) {
+    state.sourceFiles.push(f);
+    state.sourceTexts.push(await readFileAsText(f));
+  }
+  renderSourceList();
+  renderEssayList();
+}
+document.getElementById('sourceFiles').addEventListener('change', async function() {
+  const files = Array.from(this.files);
+  this.value = '';
+  await addSourceFiles(files);
+});
+
+async function addEssayFiles(files) {
+  const failed = [];
+  for (const f of files) {
+    if (isImageFile(f)) {
+      let jpeg;
+      try { jpeg = await imageToJpeg(f); } catch { failed.push(f.name); continue; }
+      const key = photoKey(f.name);
+      let entry = state.essays.find(e => e.kind === 'photo' && e.key === key);
+      if (!entry) {
+        entry = { kind: 'photo', name: photoEntryName(f.name), key, size: 0, text: '', images: [] };
+        state.essays.push(entry);
+      }
+      entry.images.push(jpeg);
+      entry.size += f.size;
+    } else {
+      state.essays.push({ kind: 'text', name: f.name, key: '', size: f.size, text: await readFileAsText(f), images: [] });
+    }
+  }
+  renderEssayList();
+  if (failed.length) {
+    alert("These photos couldn't be opened: " + failed.join(', ') + '\n\nTry saving them as JPG or PNG and uploading again.');
+  }
+}
+
+document.getElementById('essayFiles').addEventListener('change', async function() {
+  const files = Array.from(this.files);
+  this.value = '';
+  await addEssayFiles(files);
+});
+
+function addPages(i) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = async () => {
+    const entry = state.essays[i];
+    const failed = [];
+    for (const f of Array.from(input.files)) {
+      try { entry.images.push(await imageToJpeg(f)); entry.size += f.size; } catch { failed.push(f.name); }
+    }
+    entry.text = '';
+    renderEssayList();
+    if (failed.length) alert("These photos couldn't be opened: " + failed.join(', '));
+  };
+  input.click();
+}
+
+function renameEssay(i) {
+  const e = state.essays[i];
+  const n = prompt("Student's name for this submission:", displayName(e));
+  if (n === null) return;
+  const clean = n.trim().replace(/[\\/:*?"<>|]/g, '');
+  if (!clean) return;
+  const ext = (e.name.match(/\.[^/.]+$/) || [''])[0];
+  e.name = clean + ext;
+  if (e.kind === 'photo') e.key = clean.toLowerCase();
+  renderEssayList();
+}
+
+function renderEssayList() {
+  const el = document.getElementById('essayList');
+  el.innerHTML = '';
+  const nm = getNameMap();
+  state.essays.forEach((e, i) => {
+    const s = nm.students[i];
+    let privacy;
+    if (s.hidden.length) {
+      privacy = '🔒 Hides: ' + s.hidden.map(esc).join(', ');
+    } else if (e.kind === 'photo' && CAMERA_NAME.test(baseName(e.name))) {
+      privacy = '<span class="warn">✎ Rename this photo to the student\'s name</span>';
+    } else {
+      privacy = '<span class="warn">⚠️ No student name found in this file name</span>';
+    }
+    if (s.skipped.length) {
+      privacy += ` · <span class="warn">Not hidden (also appears in your assignment materials): ${s.skipped.map(esc).join(', ')}</span>`;
+    }
+    const size = e.kind === 'photo'
+      ? `${e.images.length} photo${e.images.length !== 1 ? 's' : ''}`
+      : fmt(e.size);
+    const d = document.createElement('div');
+    d.className = 'file-item';
+    d.innerHTML = `<span>${e.kind === 'photo' ? '📷' : '📄'}</span>
+      <div class="file-main"><div class="file-name">${esc(displayName(e))}</div><div class="file-privacy">${privacy}</div></div>
+      <span class="file-size">${size}</span>
+      ${e.kind === 'photo' ? '<button class="file-addpage">+ Page</button>' : ''}
+      <button class="file-rename" title="Rename">✎</button>
+      <button class="file-remove" title="Remove">×</button>`;
+    d.querySelector('.file-remove').onclick = () => { state.essays.splice(i, 1); renderEssayList(); };
+    d.querySelector('.file-rename').onclick = () => renameEssay(i);
+    const addBtn = d.querySelector('.file-addpage');
+    if (addBtn) addBtn.onclick = () => addPages(i);
+    el.appendChild(d);
+  });
+  document.getElementById('previewBtn').style.display = state.essays.length ? 'inline-flex' : 'none';
+}
+
+// ── PRIVACY PREVIEW ───────────────────────────────────────────────────────────
+document.getElementById('previewBtn').addEventListener('click', () => {
+  const sel = document.getElementById('previewSelect');
+  sel.innerHTML = state.essays.map((e, i) => `<option value="${i}">${esc(displayName(e))}</option>`).join('');
+  sel.onchange = () => showPreview(parseInt(sel.value, 10));
+  showPreview(0);
+  document.getElementById('previewModal').style.display = 'flex';
+});
+document.getElementById('previewClose').addEventListener('click', () => {
+  document.getElementById('previewModal').style.display = 'none';
+});
+
+function showPreview(i) {
+  const nm = getNameMap();
+  const e = state.essays[i];
+  const s = nm.students[i];
+  document.getElementById('previewNames').textContent =
+    `This student appears to the AI as "${s.alias}".` + (s.hidden.length ? ` Hidden names: ${s.hidden.join(', ')}.` : ' No name was found in the file name.');
+  let body;
+  if (e.kind === 'photo' && !e.text) {
+    body = 'This submission is a photo. The photo itself is sent so the AI can read the handwriting, so any name written on the page will be visible to it. Cover names before taking the picture.\n\nAfter the handwriting is read, the typed version has names hidden before grading, just like typed essays.';
+  } else {
+    body = nm.mask(e.text || '');
+  }
+  document.getElementById('previewText').textContent = body;
+}
+
+// ── CALIBRATION ───────────────────────────────────────────────────────────────
+function selectOption(groupId, btn, key, value) {
+  document.querySelectorAll('#' + groupId + ' .option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state[key] = value;
+}
+
+document.getElementById('toCalibrate').addEventListener('click', () => {
+  if (state.essays.length === 0) {
+    alert('Please upload at least one student submission to continue.');
+    return;
+  }
+  document.getElementById('calibChatLabel').textContent = state.assignmentTitle || 'Assignment';
+  goTo('screenCalibrate');
+  initCalibChat();
+  startCalibChat();
+});
+
+function buildCalibSystemPrompt() {
+  const photos = state.essays.filter(e => e.kind === 'photo').length;
+  const typed = state.essays.length - photos;
+  const subs = [
+    typed ? `${typed} typed submission${typed !== 1 ? 's' : ''}` : '',
+    photos ? `${photos} handwritten submission${photos !== 1 ? 's' : ''} (photos)` : ''
+  ].filter(Boolean).join(' and ');
+
+  return `You are Calibrate — a writing feedback assistant built for teachers. You think like an expert educator and sound like a thoughtful colleague, not a chatbot.
+
+Here's what the teacher has set up:
+- Assignment title: ${state.assignmentTitle || 'Not given'}
+- Prompt: ${state.assignmentPrompt || 'Not provided'}
+- Rubric: ${state.rubricText ? 'Uploaded — excerpt below' : 'None — you will use a general 4-point writing rubric'}
+- Supporting documents: ${state.sourceFiles.length ? state.sourceFiles.map(f => f.name).join(', ') : 'None'}
+- Student submissions: ${subs}
+- Tone: ${state.tone || 'Not chosen — balanced and constructive'}
+- Rubric comment length: ${state.length || 'Not chosen — balanced'}
+${state.rubricText ? `\nRUBRIC EXCERPT:\n${state.rubricText.substring(0, 1500)}\n` : ''}
+Write the opening message now. Keep it to 3–5 short sentences:
+1. Briefly confirm what you see: the assignment, the rubric (name its categories if you can see them), any supporting documents, how many submissions, and the tone and length chosen.
+2. Ask if there's anything else they'd like you to know about how they grade, or tell them they can click "Start Grading" to begin.
+
+After that, if the teacher shares preferences, paraphrase them back briefly to confirm you understood. If something is vague, ask one clarifying question. Remind them they can click "Start Grading" whenever they're ready.
+
+You cannot see or grade essays in this chat. If asked to, explain that grading happens after they click Start Grading.`;
+}
+
+let calibSession = 0;
+
+function initCalibChat() {
+  document.getElementById('calibMessages').innerHTML = '';
+  state.calibMessages = [];
+  state.calibInitialized = false;
+  document.getElementById('toGrade').disabled = false;
+  document.getElementById('calibSend').disabled = true;
+}
+
+async function startCalibChat() {
+  const session = ++calibSession;
+  state.calibInitialized = true;
+  state.calibMessages = [{ role: 'user', content: buildCalibSystemPrompt() }];
+  addMsg('calibMessages', 'ai', null, true);
+  const r = await callAPI(state.calibMessages, 500);
+  if (session !== calibSession) return;
+  removeTyping('calibMessages');
+  addMsg('calibMessages', 'ai', r);
+  state.calibMessages.push({ role: 'assistant', content: r });
+  document.getElementById('calibSend').disabled = false;
+}
+
+document.getElementById('calibSend').addEventListener('click', sendCalib);
+document.getElementById('calibInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCalib(); }
+});
+
+async function sendCalib() {
+  const inp = document.getElementById('calibInput');
+  const txt = inp.value.trim();
+  if (!txt || document.getElementById('calibSend').disabled) return;
+  inp.value = '';
+  const session = calibSession;
+  document.getElementById('calibSend').disabled = true;
+  addMsg('calibMessages', 'user', txt);
+  state.calibMessages.push({ role: 'user', content: txt });
+  addMsg('calibMessages', 'ai', null, true);
+  const r = await callAPI(state.calibMessages, 800);
+  if (session !== calibSession) return;
+  removeTyping('calibMessages');
+  addMsg('calibMessages', 'ai', r);
+  state.calibMessages.push({ role: 'assistant', content: r });
+  document.getElementById('calibSend').disabled = false;
+}
+
+document.getElementById('toGrade').addEventListener('click', () => {
+  const convo = state.calibMessages.slice(1).map(m => `${m.role === 'user' ? 'Teacher' : 'Calibrate'}: ${m.content}`).join('\n\n');
+  state.calibrationRules = `Tone: ${state.tone || 'Balanced and constructive'}\nRubric comment length: ${state.length || 'Balanced'}\n\n${convo}`;
+  calibSession++;
+  goTo('screenGrade');
+  startGrading();
+});
+
+// ── FEEDBACK FORMAT ───────────────────────────────────────────────────────────
+function feedbackToText(j) {
+  const lines = [];
+  if (j.score) lines.push('Score: ' + String(j.score).replace(/^score:\s*/i, ''));
+  lines.push('', "What's working", j.whatsWorking || '', '', 'Your one growth move', j.growthMove || '', '', 'Try it here', j.tryItHere || '', '', 'Rubric Breakdown');
+  (j.rubric || []).forEach(r => {
+    const cat = String(r.category || '').replace(/:/g, ' -');
+    lines.push(`${cat}: ${r.score ?? ''} — ${r.comment || ''}`);
+  });
+  if (j.total) lines.push(/^total:/i.test(j.total) ? j.total : 'Total: ' + j.total);
+  return lines.join('\n').trim();
+}
+
+function parseFeedbackText(text) {
+  const out = { score: '', working: [], growth: [], tryIt: [], rubric: [], total: '', other: [] };
+  let sec = '';
+  String(text || '').split('\n').forEach(line => {
+    const clean = line.trim().replace(/\*\*/g, '').replace(/^#+\s*/, '').trim();
+    if (!clean || clean === '---') return;
+    const lower = clean.toLowerCase().replace('’', "'");
+    if (/^score:/i.test(clean)) { out.score = clean.replace(/^score:\s*/i, ''); return; }
+    if (lower.startsWith("what's working")) { sec = 'working'; return; }
+    if (lower.includes('growth move') && clean.length < 30) { sec = 'growth'; return; }
+    if (lower.startsWith('try it here')) { sec = 'try'; return; }
+    if (lower.startsWith('rubric breakdown')) { sec = 'rubric'; return; }
+    if (/^total:/i.test(clean)) { out.total = clean; return; }
+    if (sec === 'rubric') {
+      const ci = clean.indexOf(':');
+      const di = clean.search(/\s[—–-]\s|—|–/);
+      if (ci > 0 && di > ci) {
+        out.rubric.push({
+          cat: clean.slice(0, ci).trim(),
+          score: clean.slice(ci + 1, di).trim(),
+          comment: clean.slice(di).replace(/^\s*[—–-]+\s*/, '').trim()
+        });
+      } else if (out.rubric.length) {
+        out.rubric[out.rubric.length - 1].comment += ' ' + clean;
+      } else {
+        out.other.push(clean);
+      }
+      return;
+    }
+    if (sec === 'working') out.working.push(clean);
+    else if (sec === 'growth') out.growth.push(clean);
+    else if (sec === 'try') out.tryIt.push(clean);
+    else out.other.push(clean);
+  });
+  return out;
+}
+
+function scoreLabel(text) {
+  const p = parseFeedbackText(text);
+  if (p.total) return p.total.replace(/^total:\s*/i, '');
+  return p.score;
+}
+
+function formatFeedbackHTML(text) {
+  const p = parseFeedbackText(text);
+  let html = '';
+  if (p.score) html += `<div class="score-summary">${esc(p.score)}</div>`;
+  p.other.forEach(t => { html += `<p>${esc(t)}</p>`; });
+  if (p.working.length) html += `<h4>What's working</h4><p>${esc(p.working.join(' '))}</p>`;
+  if (p.growth.length) html += `<h4>Your one growth move</h4><p>${esc(p.growth.join(' '))}</p>`;
+  if (p.tryIt.length) html += `<h4>Try it here</h4><p>${esc(p.tryIt.join(' '))}</p>`;
+  if (p.rubric.length) {
+    html += '<h4>Rubric Breakdown</h4>';
+    p.rubric.forEach(r => {
+      html += `<div class="rubric-row"><span class="rubric-category">${esc(r.cat)}</span><span class="rubric-score">${esc(r.score)}</span><span class="rubric-comment">${esc(r.comment)}</span></div>`;
+    });
+  }
+  if (p.total) html += `<div style="margin-top:10px;font-weight:700;color:var(--navy);font-size:14px;">${esc(p.total)}</div>`;
+  return html;
+}
+
+const FEEDBACK_JSON_SPEC = `{
+  "score": "One line summarizing the scores, using the rubric's own categories and scale",
+  "whatsWorking": "ONE sentence",
+  "growthMove": "ONE sentence",
+  "tryItHere": "ONE sentence",
+  "rubric": [
+    { "category": "[rubric category name]", "score": "[score on the rubric's scale]", "comment": "..." }
+  ],
+  "total": "Total: [earned]/[possible] — or an empty string if the rubric has no overall total"
+}`;
+
+const SCORING_RULES = `SCORING RULES:
+- Use the uploaded rubric's own categories, in its order, and its own scoring scale (points, levels, or descriptors). Do not convert to letter grades, percentages, or any other scale.
+- If no rubric was provided, score four categories (Claim & Ideas, Evidence & Support, Organization, Conventions) on a 4-point scale each, with a total out of 16.`;
+
+// ── GRADING ───────────────────────────────────────────────────────────────────
+async function startGrading() {
+  state.results = [];
+  state.currentIndex = 0;
+  const total = state.essays.length;
+  document.getElementById('gradingView').style.display = 'block';
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('inlineReviewView').style.display = 'none';
+  document.getElementById('progressCount').textContent = `0 / ${total}`;
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressList').innerHTML = '';
+
+  state.essays.forEach((e, i) => {
+    const d = document.createElement('div');
+    d.className = 'progress-item';
+    d.id = 'prog-' + i;
+    d.innerHTML = `<div class="progress-status">—</div><div class="progress-name">${e.kind === 'photo' ? '📷 ' : ''}${esc(displayName(e))}</div><div class="progress-grade" id="grade-${i}"></div>`;
+    document.getElementById('progressList').appendChild(d);
+  });
+
+  await gradeOne(0);
+  showSubmissionReview();
+}
+
+async function transcribePhotos(e) {
+  const content = [
+    ...e.images.map(data => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } })),
+    { type: 'text', text: `${e.images.length > 1 ? `These ${e.images.length} photos show` : 'This photo shows'} one student's handwritten work${e.images.length > 1 ? ', in page order' : ''}.
+
+Transcribe the writing exactly as the student wrote it. Keep the student's own spelling, grammar, capitalization, and punctuation. Do not correct anything, because the transcription will be graded. Keep paragraph breaks. Write [illegible] for any word you cannot read. Leave out the student's name if it appears at the top of the page.
+
+Output only the transcription, with no introduction or comments.` }
+  ];
+  return await callAPI([{ role: 'user', content }], 4000);
+}
+
+async function gradeOne(index) {
+  const e = state.essays[index];
+  const item = document.getElementById('prog-' + index);
+  item.classList.remove('done');
+  item.classList.add('processing');
+  item.querySelector('.progress-status').textContent = '⟳';
+
+  if (e.kind === 'photo' && !e.text) {
+    document.getElementById('progressLabel').textContent = `Reading handwriting: ${displayName(e)}...`;
+    e.text = await transcribePhotos(e);
+  }
+
+  document.getElementById('progressLabel').textContent = `Processing ${displayName(e)}...`;
+  const feedback = await generateFeedback(e.text);
+  state.results[index] = { name: e.name, feedback, approved: false };
+
+  item.classList.remove('processing');
+  item.classList.add('done');
+  item.querySelector('.progress-status').textContent = '✓';
+  document.getElementById('grade-' + index).textContent = scoreLabel(feedback);
+
+  const done = state.results.filter(Boolean).length;
+  document.getElementById('progressCount').textContent = `${done} / ${state.essays.length}`;
+  document.getElementById('progressBar').style.width = (done / state.essays.length * 100) + '%';
+  state.currentIndex = Math.max(state.currentIndex, index + 1);
+}
+
+async function generateFeedback(essayText) {
+  const calibration = state.calibrationRules.substring(0, 3000);
+  const prompt = `You are an expert writing feedback assistant for teachers.
+
+Here is everything the teacher has provided:
+
+Assignment: ${state.assignmentTitle || 'Not specified'}
+Prompt: ${state.assignmentPrompt || 'Not provided'}
+Rubric: ${state.rubricText.substring(0, 2500) || 'None provided'}
+Supporting materials: ${state.sourceTexts.map(t => t.substring(0, 600)).join('\n---\n') || 'None'}
+
+${calibration ? `The teacher had the following calibration conversation before grading. This is your primary instruction set — follow it faithfully:\n\n${calibration}` : 'No calibration — use your best judgment as an expert writing teacher.'}
+
+Now read the student essay below and produce feedback. Be specific to this student's actual writing. Every observation should reference something real on the page.
+
+${SCORING_RULES}
+
+LENGTH RULES:
+- "whatsWorking", "growthMove", and "tryItHere" must each be exactly ONE sentence. Keep them short and concrete. "tryItHere" should model a quick revision built from the student's own words.
+- The rubric comments matter most. Each one should point to something specific in this student's writing. Length: ${state.length || 'Balanced'} (Brief = 1 sentence, Balanced = 1–2 sentences, Detailed = 2–3 sentences).
+
+Student names have been replaced with labels like "Student 3". Speak to the student as "you" rather than using the label.
+
+Respond with ONLY a valid JSON object — no markdown, no backticks, no preamble:
+
+${FEEDBACK_JSON_SPEC}
+
+STUDENT ESSAY:
+${essayText}`;
+
+  const raw = await callAPI([{ role: 'user', content: prompt }], 1800);
+  try {
+    const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+    return feedbackToText(JSON.parse(raw.slice(s, e + 1)));
+  } catch (err) {
+    return raw;
+  }
+}
+
+function showSubmissionReview() {
+  document.getElementById('gradingView').style.display = 'none';
+  document.getElementById('firstPaperView').style.display = 'block';
+
+  const idx = Math.max(0, state.currentIndex - 1);
+  state.reviewIndex = idx;
+  const r = state.results[idx];
+  const e = state.essays[idx];
+
+  document.getElementById('firstPaperTitle').textContent = idx === 0 ? 'First submission graded' : `Submission ${idx + 1} of ${state.essays.length} graded`;
+  document.getElementById('firstPaperName').textContent = displayName(e);
+  document.getElementById('firstPaperGrade').textContent = scoreLabel(r.feedback);
+  document.getElementById('firstPaperFeedback').innerHTML = formatFeedbackHTML(r.feedback);
+  document.getElementById('firstPaperNote').innerHTML = e.kind === 'photo' ? '<div class="transcribed-note">📷 Transcribed from photo. Check for misread words.</div>' : '';
+  document.getElementById('firstPaperEssay').textContent = e.text;
+
+  document.getElementById('firstPaperChatMessages').innerHTML = '';
+  firstPaperChatMessages = [];
+  const remaining = state.essays.length - state.currentIndex;
+  const openMsg = remaining > 0
+    ? `I've finished grading ${displayName(e)}. Have a look at the feedback and score above.\n\nIf this looks right, just say "grade all" and I'll work through the remaining ${remaining} submission${remaining !== 1 ? 's' : ''}. You can also say "grade one more" to see another first, or tell me what to adjust.`
+    : `That was the last one. Say "grade all" to go to the review screen, or tell me what to adjust.`;
+  addMsg('firstPaperChatMessages', 'ai', openMsg);
+  firstPaperChatMessages.push({ role: 'assistant', content: openMsg });
+}
+
+let firstPaperChatMessages = [];
+
+document.getElementById('firstPaperChatSend').addEventListener('click', sendFirstPaperChat);
+document.getElementById('firstPaperChatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFirstPaperChat(); }
+});
+
+async function sendFirstPaperChat() {
+  const inp = document.getElementById('firstPaperChatInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  addMsg('firstPaperChatMessages', 'user', txt);
+  firstPaperChatMessages.push({ role: 'user', content: txt });
+  document.getElementById('firstPaperChatSend').disabled = true;
+  addMsg('firstPaperChatMessages', 'ai', null, true);
+
+  const idx = state.reviewIndex;
+  const context = `You are Calibrate. The teacher has just reviewed a graded submission.
+
+Submission: Student ${idx + 1}
+Current feedback:
+${state.results[idx].feedback}
+
+Remaining ungraded submissions: ${state.essays.length - state.currentIndex}
+
+Interpret the teacher's reply:
+- If they want to grade all remaining submissions, respond with [GRADE_ALL] followed by a brief confirmation.
+- If they want to see one more before deciding, respond with [GRADE_ONE_MORE] followed by a brief confirmation.
+- If they want an adjustment, paraphrase what you understood and ask if that's correct BEFORE acting. Once they confirm, respond with [ADJUST] followed by the adjustment instruction written as a clear grading rule, and a note that you'll regrade.
+- If something is ambiguous, ask a clarifying question.
+
+Be warm and brief. Never act on an adjustment without confirming it first.`;
+
+  const reply = await callAPI([{ role: 'user', content: context }, ...firstPaperChatMessages], 600);
+  removeTyping('firstPaperChatMessages');
+  document.getElementById('firstPaperChatSend').disabled = false;
+
+  if (reply.includes('[GRADE_ALL]')) {
+    const msg = reply.replace('[GRADE_ALL]', '').trim();
+    addMsg('firstPaperChatMessages', 'ai', msg);
+    firstPaperChatMessages.push({ role: 'assistant', content: msg });
+    setTimeout(() => gradeAll(), 800);
+  } else if (reply.includes('[GRADE_ONE_MORE]')) {
+    const msg = reply.replace('[GRADE_ONE_MORE]', '').trim();
+    addMsg('firstPaperChatMessages', 'ai', msg);
+    firstPaperChatMessages.push({ role: 'assistant', content: msg });
+    setTimeout(() => gradeOneMore(), 800);
+  } else if (reply.includes('[ADJUST]')) {
+    const adjustInstruction = reply.replace('[ADJUST]', '').trim();
+    addMsg('firstPaperChatMessages', 'ai', adjustInstruction);
+    firstPaperChatMessages.push({ role: 'assistant', content: adjustInstruction });
+    state.calibrationRules += `\n\nTEACHER ADJUSTMENT: ${adjustInstruction}`;
+    setTimeout(() => regradeCurrent(), 800);
+  } else {
+    addMsg('firstPaperChatMessages', 'ai', reply);
+    firstPaperChatMessages.push({ role: 'assistant', content: reply });
+  }
+}
+
+async function regradeCurrent() {
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('gradingView').style.display = 'block';
+  document.getElementById('progressLabel').textContent = 'Regrading...';
+  await gradeOne(state.reviewIndex);
+  showSubmissionReview();
+}
+
+async function gradeAll() {
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('gradingView').style.display = 'block';
+  for (let i = state.currentIndex; i < state.essays.length; i++) {
+    await gradeOne(i);
+    if (i < state.essays.length - 1) await new Promise(r => setTimeout(r, 500));
+  }
+  document.getElementById('progressLabel').textContent = 'All done!';
+  showInlineReview();
+}
+
+async function gradeOneMore() {
+  if (state.currentIndex >= state.essays.length) { showInlineReview(); return; }
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('gradingView').style.display = 'block';
+  await gradeOne(state.currentIndex);
+  showSubmissionReview();
+}
+
+// ── REVIEW SCREEN ─────────────────────────────────────────────────────────────
+function showInlineReview() {
+  document.getElementById('gradingView').style.display = 'none';
+  document.getElementById('firstPaperView').style.display = 'none';
+  document.getElementById('inlineReviewView').style.display = 'block';
+
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+
+  state.results.forEach((r, i) => {
+    if (!r) return;
+    const e = state.essays[i];
+    const d = document.createElement('div');
+    d.className = 'review-item';
+    d.innerHTML = `
+      <div class="review-item-header">
+        <div class="review-item-name">${e.kind === 'photo' ? '📷 ' : ''}${esc(displayName(e))}</div>
+        <div class="review-item-grade" id="reviewGrade-${i}">${esc(scoreLabel(r.feedback))}</div>
+      </div>
+      <div class="review-item-body">
+        <div class="review-feedback-pane">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Feedback — edit below</div>
+          <textarea class="review-feedback-edit" id="feedbackEdit-${i}"></textarea>
+        </div>
+        <div class="review-essay-pane">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Student Writing</div>
+          ${e.kind === 'photo' ? '<div class="transcribed-note">📷 Transcribed from photo. Check for misread words.</div>' : ''}
+          <div class="review-essay-text">${esc(e.text || '')}</div>
+        </div>
+      </div>
+      <div class="review-item-footer">
+        <button class="approve-btn" id="approve-${i}" onclick="approveItem(${i})">✓ Approve</button>
+        <button class="dl-btn" onclick="dlOne(${i})">⬇ Download</button>
+      </div>`;
+    list.appendChild(d);
+    const ta = document.getElementById('feedbackEdit-' + i);
+    ta.value = r.feedback;
+    ta.addEventListener('input', () => {
+      state.results[i].feedback = ta.value;
+      document.getElementById('reviewGrade-' + i).textContent = scoreLabel(ta.value);
+    });
+  });
+
+  initReviewChat();
+}
+
+function approveItem(i) {
+  state.results[i].approved = true;
+  state.results[i].feedback = document.getElementById('feedbackEdit-' + i).value;
+  const btn = document.getElementById('approve-' + i);
+  btn.textContent = '✓ Approved';
+  btn.classList.add('approved');
+}
+
+function dlOne(i) {
+  // The edit box is the source of truth, so teacher edits are always what gets downloaded.
+  const edit = document.getElementById('feedbackEdit-' + i);
+  if (edit) state.results[i].feedback = edit.value;
+  const r = state.results[i];
+  const e = state.essays[i];
+  const name = displayName(e);
+  const p = parseFeedbackText(r.feedback);
+
+  const rubricHTML = p.rubric.map(row => `
+    <tr>
+      <td style="padding:8px 12px;font-weight:600;color:#0f1f3d;border-bottom:1px solid #e2d9c8;width:200px;">${esc(row.cat)}</td>
+      <td style="padding:8px 12px;font-weight:700;color:#c8a800;border-bottom:1px solid #e2d9c8;width:70px;">${esc(row.score)}</td>
+      <td style="padding:8px 12px;color:#374151;border-bottom:1px solid #e2d9c8;">${esc(row.comment)}</td>
+    </tr>`).join('');
+
+  const essayHTML = (e.text || '').split('\n').filter(l => l.trim()).map(l =>
+    `<p style="margin:0 0 10px;font-size:14px;line-height:1.8;color:#374151;">${esc(l.trim())}</p>`
+  ).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(name)} — Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'DM Sans', sans-serif; background: #f5f0e8; margin: 0; padding: 32px 20px; color: #1a1a2e; }
+  .page { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .page-header { background: #0f1f3d; padding: 28px 36px; }
+  .page-header h1 { font-family: 'Playfair Display', serif; font-size: 20px; color: #fff; margin: 0 0 4px; }
+  .page-header .student-name { font-size: 14px; color: rgba(255,255,255,0.6); }
+  .score-bar { background: #1a3260; padding: 14px 36px; font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #c8a800; border-bottom: 3px solid #c8a800; }
+  .content { padding: 32px 36px; }
+  .section { margin-bottom: 24px; }
+  .section-label { font-size: 11px; font-weight: 700; color: #0f1f3d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #c8a800; display: inline-block; }
+  .section-body { font-size: 14px; line-height: 1.8; color: #374151; }
+  .growth-box { background: #fffbeb; border-left: 4px solid #c8a800; padding: 14px 20px; border-radius: 0 8px 8px 0; }
+  .try-box { background: #f0f4ff; border-left: 4px solid #0f1f3d; padding: 14px 20px; border-radius: 0 8px 8px 0; font-style: italic; }
+  .divider { border: none; border-top: 1px solid #e2d9c8; margin: 28px 0; }
+  .rubric-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rubric-table th { background: #0f1f3d; color: #c8a800; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .total-row td { background: #f5f0e8; font-weight: 700; color: #0f1f3d; font-size: 15px; padding: 12px; }
+  .essay-section { background: #f5f0e8; padding: 28px 36px; border-top: 3px solid #e2d9c8; }
+  .essay-label { font-size: 11px; font-weight: 700; color: #0f1f3d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  @media print { body { background: white; padding: 0; } .page { box-shadow: none; border-radius: 0; } .print-btn { display: none; } }
+  .print-btn { display: block; width: 100%; max-width: 760px; margin: 16px auto 0; padding: 13px; background: #0f1f3d; color: #c8a800; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .print-btn:hover { background: #1a3260; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <h1>${esc(state.assignmentTitle || 'Writing Assignment')}</h1>
+    <div class="student-name">${esc(name)}</div>
+  </div>
+  ${p.score ? `<div class="score-bar">${esc(p.score)}</div>` : ''}
+  <div class="content">
+    <div class="section">
+      <div class="section-label">What's working</div>
+      <div class="section-body">${esc(p.working.join(' '))}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Your one growth move</div>
+      <div class="growth-box section-body">${esc(p.growth.join(' '))}</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Try it here</div>
+      <div class="try-box section-body">${esc(p.tryIt.join(' '))}</div>
+    </div>
+    <hr class="divider">
+    <div class="section-label" style="margin-bottom:14px;">Rubric Breakdown</div>
+    <table class="rubric-table">
+      <thead><tr><th>Category</th><th>Score</th><th>Feedback</th></tr></thead>
+      <tbody>${rubricHTML}</tbody>
+      ${p.total ? `<tfoot><tr class="total-row"><td colspan="3">${esc(p.total)}</td></tr></tfoot>` : ''}
+    </table>
+  </div>
+  <div class="essay-section">
+    <div class="essay-label">Student Writing${e.kind === 'photo' ? ' (transcribed from photo)' : ''}</div>
+    ${essayHTML}
+  </div>
+</div>
+<button class="print-btn">⬇ Save as PDF</button>
+<scr` + `ipt>
+  document.querySelector('.print-btn').addEventListener('click', () => window.print());
+</scr` + `ipt>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${baseName(e.name)}_Feedback.html`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+document.getElementById('downloadAllBtn').addEventListener('click', () => {
+  state.results.forEach((r, i) => { if (r) setTimeout(() => dlOne(i), i * 400); });
+});
+
+// ── REVIEW CHAT ───────────────────────────────────────────────────────────────
+let reviewChatMessages = [];
+
+function initReviewChat() {
+  reviewChatMessages = [];
+  document.getElementById('reviewChatMessages').innerHTML = '';
+
+  const graded = state.results.filter(Boolean);
+  const totals = graded.map(r => {
+    const m = scoreLabel(r.feedback).match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
+    return m ? { score: parseFloat(m[1]), max: parseFloat(m[2]) } : null;
+  });
+  let avgDisplay = '';
+  if (totals.length && totals.every(Boolean) && totals.every(t => t.max === totals[0].max)) {
+    const avg = totals.reduce((a, b) => a + b.score, 0) / totals.length;
+    avgDisplay = ` Class average: ${Math.round(avg * 10) / 10}/${totals[0].max}.`;
+  }
+
+  const openMsg = `Grading is complete for all ${graded.length} submissions.${avgDisplay}\n\nHow does everything look? Tell me which student and what to adjust.`;
+  addMsg('reviewChatMessages', 'ai', openMsg);
+  reviewChatMessages.push({ role: 'assistant', content: openMsg });
+}
+
+document.getElementById('reviewChatSend').addEventListener('click', sendReviewChat);
+document.getElementById('reviewChatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReviewChat(); }
+});
+
+function findMentionedStudent(txt) {
+  const nm = getNameMap();
+  for (let i = 0; i < state.essays.length; i++) {
+    if (!state.results[i]) continue;
+    const s = nm.students[i];
+    if (s.parts.some(p => new RegExp(B_L + escRe(p) + B_R, 'iu').test(txt))) return i;
+    if (txt.toLowerCase().includes(displayName(state.essays[i]).toLowerCase())) return i;
+  }
+  return -1;
+}
+
+async function sendReviewChat() {
+  const inp = document.getElementById('reviewChatInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  addMsg('reviewChatMessages', 'user', txt);
+  reviewChatMessages.push({ role: 'user', content: txt });
+  document.getElementById('reviewChatSend').disabled = true;
+  addMsg('reviewChatMessages', 'ai', null, true);
+
+  const roster = state.results.map((r, i) => r ? `Student ${i + 1} (${displayName(state.essays[i])}) — ${scoreLabel(r.feedback) || '?'}` : null).filter(Boolean).join('\n');
+
+  const mentioned = findMentionedStudent(txt);
+  const specificContext = mentioned >= 0
+    ? `\n\nCURRENT FEEDBACK FOR Student ${mentioned + 1}:\n${state.results[mentioned].feedback}\n\nSTUDENT ESSAY:\n${(state.essays[mentioned].text || '').substring(0, 2500)}`
+    : '';
+
+  const systemContext = `You are Calibrate, an expert writing feedback assistant reviewing graded student work with a teacher.
+
+ASSIGNMENT: ${state.assignmentTitle || 'Writing Assignment'}
+RUBRIC: ${state.rubricText.substring(0, 1500) || 'None — general 4-point rubric'}
+CALIBRATION: ${state.calibrationRules.substring(0, 800)}
+
+GRADED ROSTER:
+${roster}${specificContext}
+
+If the teacher wants a change to one submission, reply with:
+1. One short sentence saying what you changed.
+2. On a new line, the tag [REGRADE:Student N] if the score changes, or [ADJUST:Student N] if only wording or tone changes.
+3. The complete updated feedback as a JSON object in this format, and nothing after it:
+${FEEDBACK_JSON_SPEC}
+
+Keep "whatsWorking", "growthMove", and "tryItHere" to one sentence each. ${SCORING_RULES}
+
+Change only one submission per reply. If you're not sure which student they mean, ask. If no change is needed, reply normally. Speak to students as "you" in feedback.`;
+
+  const raw = await callAPI([{ role: 'user', content: systemContext }, ...reviewChatMessages], 2000, 3, { raw: true });
+  removeTyping('reviewChatMessages');
+  const nm = getNameMap();
+  const tag = raw.match(/\[(REGRADE|ADJUST):\s*([^\]]+)\]/);
+
+  if (tag) {
+    const num = tag[2].match(/Student\s*(\d+)/i);
+    const idx = num ? parseInt(num[1], 10) - 1 : -1;
+    const before = nm.unmask(raw.slice(0, tag.index)).trim();
+    const after = nm.unmask(raw.slice(tag.index + tag[0].length));
+    let newText = null;
+    const s = after.indexOf('{'), e = after.lastIndexOf('}');
+    if (s >= 0 && e > s) { try { newText = feedbackToText(JSON.parse(after.slice(s, e + 1))); } catch (err) {} }
+
+    if (idx >= 0 && state.results[idx] && newText) {
+      state.results[idx].feedback = newText;
+      state.results[idx].approved = false;
+      const editArea = document.getElementById('feedbackEdit-' + idx);
+      if (editArea) editArea.value = newText;
+      const gradeEl = document.getElementById('reviewGrade-' + idx);
+      if (gradeEl) gradeEl.textContent = scoreLabel(newText);
+      const approveBtn = document.getElementById('approve-' + idx);
+      if (approveBtn) { approveBtn.textContent = '✓ Approve'; approveBtn.classList.remove('approved'); }
+      const confirmMsg = `${before ? before + '\n\n' : ''}I've updated the feedback for ${displayName(state.essays[idx])}. The changes are shown above. Anything else?`;
+      addMsg('reviewChatMessages', 'ai', confirmMsg);
+      reviewChatMessages.push({ role: 'assistant', content: confirmMsg });
+    } else {
+      const msg = (before || "I wasn't able to apply that change. Could you tell me again which student you mean?");
+      addMsg('reviewChatMessages', 'ai', msg);
+      reviewChatMessages.push({ role: 'assistant', content: msg });
+    }
+  } else {
+    const msg = nm.unmask(raw);
+    addMsg('reviewChatMessages', 'ai', msg);
+    reviewChatMessages.push({ role: 'assistant', content: msg });
+  }
+
+  document.getElementById('reviewChatSend').disabled = false;
+}
+
+// ── CHAT HELPERS ──────────────────────────────────────────────────────────────
+function addMsg(containerId, role, text, isTyping = false) {
+  const c = document.getElementById(containerId);
+  const d = document.createElement('div');
+  d.className = 'message ' + role;
+  if (isTyping) d.id = containerId + '_typing';
+  const av = role === 'ai' ? 'C' : 'T';
+  const bubble = isTyping
+    ? `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`
+    : `<div class="msg-bubble">${esc(text || '').replace(/\n/g, '<br>')}</div>`;
+  d.innerHTML = `<div class="msg-avatar">${av}</div>${bubble}`;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function removeTyping(containerId) {
+  const t = document.getElementById(containerId + '_typing');
+  if (t) t.remove();
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+// Every message passes through name masking here, so no code path can send a
+// student's name by accident. Replies are unmasked unless { raw: true }.
+async function callAPI(messages, maxTokens = 1000, retries = 3, opts = {}) {
+  const nm = getNameMap();
+  const masked = messages.map(m => ({ role: m.role, content: maskContent(m.content, nm) }));
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(PROXY, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${PROXY_TOKEN}`,
+          'x-api-key': state.apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, messages: masked })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg;
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson.error?.message || errJson.message || errText;
+        } catch {
+          errMsg = errText || `HTTP ${res.status}`;
+        }
+        if (res.status === 401) return `API key error: "${errMsg}" — double-check your key at console.anthropic.com`;
+        if (res.status === 429) return `Rate limit or spend limit reached: "${errMsg}" — check your Anthropic account billing`;
+        if ((res.status === 503 || res.status === 502 || res.status === 524 || res.status === 529) && attempt < retries) {
+          await new Promise(r => setTimeout(r, attempt * 2000));
+          continue;
+        }
+        if (res.status === 503 || res.status === 502) return `Proxy unavailable (${res.status}) — the Render proxy may be down. Try again in 30 seconds.`;
+        return `Error ${res.status}: ${errMsg}`;
+      }
+
+      const data = await res.json();
+      const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+      if (text) return opts.raw ? text : nm.unmask(text);
+      if (data.error) return `API error: ${data.error.message}`;
+      return 'Something went wrong — no content returned. Please try again.';
+
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, attempt * 2000));
+        continue;
+      }
+      if (err.name === 'TypeError') {
+        return `Network error: Could not reach the proxy server. Check your internet connection, or the Render proxy may be down.`;
+      }
+      return `Unexpected error: ${err.message}`;
+    }
+  }
+}
+</script>
+</body>
+</html>
